@@ -200,7 +200,9 @@ function* loadDaemonAccounts(
       )
     }
 
-    const result = yield* Saga.callPromise(RPCTypes.configGetAllProvisionedUsernamesRpcPromise)
+    const result: Array<RPCTypes.ConfiguredAccount> = yield* Saga.callPromise(
+      RPCTypes.loginGetConfiguredAccountsRpcPromise
+    )
     let usernames = result.provisionedUsernames || []
     let defaultUsername = result.defaultUsername
     usernames = usernames.sort()

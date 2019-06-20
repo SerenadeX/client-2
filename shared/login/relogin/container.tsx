@@ -4,19 +4,19 @@ import * as ProvisionGen from '../../actions/provision-gen'
 import * as SignupGen from '../../actions/signup-gen'
 import HiddenString from '../../util/hidden-string'
 import Login from '.'
-import {connect} from '../../util/container'
+import {connect, TypedState, TypedDispatch} from '../../util/container'
 
 type OwnProps = {
   navigateAppend: (...args: Array<any>) => any
 }
 
-const mapStateToProps = state => ({
-  _users: state.config.configuredAccounts,
+const mapStateToProps = (state: TypedState) => ({
+  _users: state.config.configuredAccounts.keys(),
   error: state.login.error.stringValue(),
   selectedUser: state.config.defaultUsername,
 })
 
-const mapDispatchToProps = (dispatch, ownProps: OwnProps) => ({
+const mapDispatchToProps = (dispatch: TypedDispatch, ownProps: OwnProps) => ({
   onFeedback: () => dispatch(ownProps.navigateAppend(['feedback'])),
   onForgotPassword: () => dispatch(LoginGen.createLaunchForgotPasswordWebPage()),
   onLogin: (username: string, password: string) =>

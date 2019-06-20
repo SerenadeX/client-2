@@ -81,7 +81,7 @@ export const makeState = I.Record<Types._State>({
   appOutOfDateMessage: '',
   appOutOfDateStatus: 'checking',
   avatars: I.Map(),
-  configuredAccounts: I.List(),
+  configuredAccounts: I.Map(),
   daemonError: null,
   daemonHandshakeFailedReason: '',
   daemonHandshakeRetriesLeft: maxHandshakeTries,

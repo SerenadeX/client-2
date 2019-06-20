@@ -25,7 +25,7 @@ export default function(state: Types.State = initialState, action: Actions): Typ
       return state.merge({
         configuredAccounts: state.configuredAccounts,
         defaultUsername: action.payload.wasCurrentDevice // if revoking self find another name if it exists
-          ? state.configuredAccounts.find(n => n !== state.defaultUsername) || ''
+          ? I.List(state.configuredAccounts.keys()).find(n => n !== state.defaultUsername) || ''
           : state.defaultUsername,
       })
     case Tracker2Gen.updatedDetails: {
@@ -216,7 +216,7 @@ export default function(state: Types.State = initialState, action: Actions): Typ
       }
 
       return state.merge({
-        configuredAccounts: I.List(action.payload.usernames),
+        configuredAccounts: I.Map(action.payload.usernames.map()),
         defaultUsername,
       })
     case ConfigGen.setDeletedSelf:

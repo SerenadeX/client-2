@@ -20,7 +20,7 @@ export type _State = {
   appOutOfDateMessage: string
   appOutOfDateStatus: AppOutOfDateStatus
   avatars: I.Map<string, I.Map<number, string>>
-  configuredAccounts: I.List<string>
+  configuredAccounts: I.Map<string, boolean>
   daemonError: Error | null
   daemonHandshakeState: DaemonHandshakeState
   daemonHandshakeFailedReason: string
