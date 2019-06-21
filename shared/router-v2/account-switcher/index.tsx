@@ -2,32 +2,30 @@ import * as React from 'react'
 import * as Kb from '../../common-adapters'
 import * as Styles from '../../styles'
 import HeaderHOC from '../../common-adapters/header-hoc'
-type AccountEntry = {
-  username: string
-  realName: string
-  signedIn: boolean
-}
+import * as ConfigTypes from '../../constants/types/config'
+import {Props as HeaderHocProps} from '../../common-adapters/header-hoc/types'
 
-type RowsProps = {
+export type RowsProps = {
+  accountRows: Array<ConfigTypes.ConfiguredAccount>
   onAddAccount: () => void
   onCreateAccount: () => void
   onSelectAccount: (username: string) => void
-  rows: Array<AccountEntry>
 }
 
-type Props = {
+export type Props = {
   fullname: string
   onCancel: () => void
   onProfileClick: () => void
   onSignOut: () => void
   username: string
-} & RowsProps
+} & RowsProps &
+  HeaderHocProps
 
 const AccountRow = ({
   entry,
   onSelectAccount,
 }: {
-  entry: AccountEntry
+  entry: ConfigTypes.ConfiguredAccount
   onSelectAccount: (username: string) => void
 }) => (
   <Kb.NameWithIcon
@@ -35,14 +33,14 @@ const AccountRow = ({
     username={entry.username}
     metaOne={
       <Kb.Text type="BodySmall" lineClamp={1} style={styles.nameText}>
-        {entry.realName}
+        {entry.fullname}
       </Kb.Text>
     }
     onClick={() => {
       onSelectAccount(entry.username)
     }}
     containerStyle={styles.row}
-    avatarStyle={!entry.signedIn && styles.avatarSignedOut}
+    avatarStyle={!entry.hasStoredSecret && styles.avatarSignedOut}
   />
 )
 
@@ -70,14 +68,14 @@ const AccountSwitcherMobile = (props: Props) => (
         />
       </Kb.Box2>
       <Kb.Box2 direction="vertical" fullWidth={true}>
-        {props.rows.map(entry => (
+        {props.accountRows.map(entry => (
           <Kb.ListItem2
             type="Small"
             icon={
               <Kb.Avatar
                 size={32}
                 username={entry.username}
-                style={!entry.signedIn && styles.avatarSignedOut}
+                style={!entry.hasStoredSecret && styles.avatarSignedOut}
               />
             }
             firstItem={false}
@@ -85,7 +83,7 @@ const AccountSwitcherMobile = (props: Props) => (
               <Kb.Box2 direction="vertical" fullWidth={true}>
                 <Kb.Text type="BodySemibold">{entry.username}</Kb.Text>
                 <Kb.Text type="BodySmall" lineClamp={1}>
-                  {entry.realName}
+                  {entry.fullname}
                 </Kb.Text>
               </Kb.Box2>
             }
@@ -101,14 +99,12 @@ const AccountSwitcherMobile = (props: Props) => (
 export default HeaderHOC(AccountSwitcherMobile)
 
 export const asRows = (props: RowsProps): Kb.MenuItems => {
-  let avatarRows: Kb.MenuItems = ['Divider']
-  avatarRows = avatarRows.concat(
-    props.rows.map(entry => ({
-      title: entry.username,
-      view: <AccountRow entry={entry} onSelectAccount={props.onSelectAccount} />,
-    }))
-  )
+  const avatarRows: Kb.MenuItems = props.accountRows.map(entry => ({
+    title: entry.username,
+    view: <AccountRow entry={entry} onSelectAccount={props.onSelectAccount} />,
+  }))
   return [
+    'Divider' as const,
     ...avatarRows,
     'Divider' as const,
     {

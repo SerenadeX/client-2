@@ -74,7 +74,7 @@
     "daemonError": {"daemonError": "Error | null"},
     "setAccounts": {
       "defaultUsername": "string",
-      "usernames": "Array<string>"
+      "configuredAccounts": "Array<RPCTypes.ConfiguredAccount>"
     },
     "globalError": {"globalError": "null | Error | RPCError"},
     "pushLoaded": {"pushLoaded": "boolean"},

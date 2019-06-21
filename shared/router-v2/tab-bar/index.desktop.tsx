@@ -6,8 +6,8 @@ import KeyHandler from '../../util/key-handler.desktop'
 import {isDarwin} from '../../constants/platform'
 import './tab-bar.css'
 import flags from '../../util/feature-flags'
-import {asRows as accountSwitcherAsRows} from '../account-switcher/index'
-type Props = {
+import {asRows as accountSwitcherAsRows, RowsProps as AccountSwitcherProps} from '../account-switcher/index'
+export type Props = {
   badgeNumbers: {[K in string]: number}
   fullname: string
   isWalletsNew?: boolean
@@ -20,7 +20,7 @@ type Props = {
   selectedTab: Tabs.Tab
   uploading: boolean
   username: string
-}
+} & AccountSwitcherProps
 
 const data = {
   [Tabs.chatTab]: {icon: 'iconfont-nav-2-chat', label: 'Chat'},
@@ -69,24 +69,7 @@ class TabBar extends React.PureComponent<Props, State> {
   _menuItems = () =>
     [
       ...(flags.fastAccountSwitch
-        ? accountSwitcherAsRows({
-            // TODO: factor these props up into the container for the tab bar
-            onAddAccount: () => {},
-            onCreateAccount: () => {},
-            onSelectAccount: (user: string) => {},
-            rows: [
-              {
-                realName: 'Jakob Test',
-                signedIn: true,
-                username: 'jakob224',
-              },
-              {
-                realName: 'Livingston Reallylongnameheimer',
-                signedIn: false,
-                username: 'jakob225',
-              },
-            ],
-          })
+        ? accountSwitcherAsRows(this.props)
         : [
             {
               onClick: this.props.onProfileClick,

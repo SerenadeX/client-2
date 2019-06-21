@@ -11,7 +11,7 @@ type OwnProps = {
 }
 
 const mapStateToProps = (state: TypedState) => ({
-  _users: state.config.configuredAccounts.keys(),
+  _users: state.config.configuredAccounts.map(account => account.username).toArray(),
   error: state.login.error.stringValue(),
   selectedUser: state.config.defaultUsername,
 })
@@ -25,8 +25,8 @@ const mapDispatchToProps = (dispatch: TypedDispatch, ownProps: OwnProps) => ({
   onSomeoneElse: () => dispatch(ProvisionGen.createStartProvision()),
 })
 
-const mergeProps = (stateProps, dispatchProps) => {
-  const users = stateProps._users.sort().toArray()
+const mergeProps = (stateProps: ReturnType<typeof mapStateToProps>, dispatchProps) => {
+  const users = stateProps._users.sort()
   let inputError = ''
   let bannerError = ''
   if (stateProps.error === 'You are offline.') {

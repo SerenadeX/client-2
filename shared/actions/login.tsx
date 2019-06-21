@@ -59,7 +59,10 @@ function* login(state, action: LoginGen.LoginPayload) {
           'keybase.1.provisionUi.PromptNewDeviceName': moveToProvisioning(action.payload.username),
           'keybase.1.provisionUi.chooseDevice': cancelOnCallback,
           'keybase.1.provisionUi.chooseGPGMethod': cancelOnCallback,
-          'keybase.1.secretUi.getPassphrase': getPasswordHandler(action.payload.password.stringValue()),
+          'keybase.1.secretUi.getPassphrase': getPasswordHandler(
+            // TODO: ask for the password if we needto
+            action.payload.password === null ? 'password' : action.payload.password.stringValue()
+          ),
         },
         // cancel if we get any of these callbacks, we're logging in, not provisioning
         incomingCallMap: {
@@ -72,6 +75,7 @@ function* login(state, action: LoginGen.LoginPayload) {
           clientType: RPCTypes.ClientType.guiMain,
           deviceName: '',
           deviceType: isMobile ? 'mobile' : 'desktop',
+          doUserSwitch: action.payload.doUserSwitch,
           paperKey: '',
           username: action.payload.username,
         },

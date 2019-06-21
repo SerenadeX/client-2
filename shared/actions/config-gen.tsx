@@ -1,6 +1,6 @@
 // NOTE: This file is GENERATED from json files in actions/json. Run 'yarn build-actions' to regenerate
 import * as I from 'immutable'
-
+import * as RPCTypes from '../constants/types/rpc-gen'
 import * as Tabs from '../constants/tabs'
 import * as ChatTypes from '../constants/types/chat2'
 import * as FsTypes from '../constants/types/fs'
@@ -101,7 +101,10 @@ type _OsNetworkStatusChangedPayload = {readonly online: boolean; readonly isInit
 type _PersistRoutePayload = {readonly path: Array<any>}
 type _PushLoadedPayload = {readonly pushLoaded: boolean}
 type _RestartHandshakePayload = void
-type _SetAccountsPayload = {readonly defaultUsername: string; readonly usernames: Array<string>}
+type _SetAccountsPayload = {
+  readonly defaultUsername: string
+  readonly configuredAccounts: Array<RPCTypes.ConfiguredAccount>
+}
 type _SetDeletedSelfPayload = {readonly deletedUsername: string}
 type _SetNavigatorPayload = {readonly navigator: any}
 type _SetNotifySoundPayload = {readonly sound: boolean; readonly writeFile: boolean}

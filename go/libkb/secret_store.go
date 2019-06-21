@@ -129,6 +129,39 @@ func GetConfiguredAccounts(m MetaContext, s SecretStoreAll) ([]keybase1.Configur
 			IsCurrent: username.Eq(currentUsername),
 		}
 	}
+
+	// Get the full names
+
+	uids := make([]keybase1.UID, 0, len(allUsernames))
+	uidMapper := m.G().UIDMapper
+	for _, username := range allUsernames {
+		uid := uidMapper.MapHardcodedUsernameToUID(username)
+		if !uid.Exists() {
+			uid = UsernameToUIDPreserveCase(username.String())
+		}
+		uids = append(uids, uid)
+	}
+	usernamePackages, err := uidMapper.MapUIDsToUsernamePackages(m.Ctx(), m.G(),
+		uids, time.Hour*24, time.Second*10, false)
+	if err != nil {
+		if usernamePackages != nil {
+			// If data is returned, interpret the error as a warning
+			m.G().Log.CInfof(m.Ctx(),
+				"error while retreiving full names: %+v", err)
+		} else {
+			return nil, err
+		}
+	}
+	for _, uPackage := range usernamePackages {
+		account, ok := accounts[uPackage.NormalizedUsername]
+		if ok && (uPackage.FullName != nil) {
+			account.Fullname = uPackage.FullName.FullName
+			accounts[uPackage.NormalizedUsername] = account
+		}
+	}
+
+	// Check for secrets
+
 	var storedSecretUsernames []string
 	if s != nil {
 		storedSecretUsernames, err = s.GetUsersWithStoredSecrets(m)

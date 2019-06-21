@@ -74,6 +74,12 @@ export const urlToUsername = (url: {
   const username = usernameMatch.toLowerCase()
   return username
 }
+export const makeConfiguredAccount = I.Record<Types._ConfiguredAccount>({
+  fullname: '',
+  hasStoredSecret: false,
+  isCurrent: false,
+  username: '',
+})
 
 export const makeState = I.Record<Types._State>({
   appFocused: true,
@@ -81,7 +87,7 @@ export const makeState = I.Record<Types._State>({
   appOutOfDateMessage: '',
   appOutOfDateStatus: 'checking',
   avatars: I.Map(),
-  configuredAccounts: I.Map(),
+  configuredAccounts: I.List(),
   daemonError: null,
   daemonHandshakeFailedReason: '',
   daemonHandshakeRetriesLeft: maxHandshakeTries,
