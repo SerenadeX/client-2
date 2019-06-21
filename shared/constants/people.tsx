@@ -131,11 +131,11 @@ function makeDescriptionForTodoItem(todo: RPCTypes.HomeScreenTodo) {
   const T = RPCTypes.HomeScreenTodoType
   switch (todo.t) {
     case T.legacyEmailVisibility:
-      return `Allow friends to find you using ${todo.legacyEmailVisibility}`
+      return `Allow friends to find you using *${todo.legacyEmailVisibility}*`
     case T.verifyAllEmail:
-      return `Your email address ${todo.verifyAllEmail} is unverified.`
+      return `Your email address *${todo.verifyAllEmail}* is unverified.`
     case T.verifyAllPhoneNumber:
-      return `Your number ${todo.verifyAllPhoneNumber} is unverified.`
+      return `Your number *${todo.verifyAllPhoneNumber}* is unverified.`
     default:
       // @ts-ignore this variant compilation seems wrong. ts todo.t can only be
       // of 3 types but that's not what we do in avdl.

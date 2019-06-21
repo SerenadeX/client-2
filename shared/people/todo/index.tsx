@@ -23,9 +23,7 @@ export type Props = {
 
 export const Task = (props: Props) => (
   <PeopleItem format="multi" badged={props.badged} icon={<Kb.Icon type={props.icon} />}>
-    <Kb.Text type="Body" style={styles.instructions}>
-      {props.instructions}
-    </Kb.Text>
+    <Kb.Markdown style={styles.instructions}>{props.instructions}</Kb.Markdown>
     <Kb.Text type="BodySmall">{props.subText}</Kb.Text>
     <Kb.Box style={styles.actionContainer}>
       {props.showSearchBar && <PeopleSearch style={styles.search} />}

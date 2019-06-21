@@ -213,7 +213,7 @@ const VerifyAllEmailConnector = connect(
   mapStateToProps,
   dispatch => ({
     onConfirm: () => {},
-    onManage: () => {},
+    onManage: () => dispatch(RouteTreeGen.createSwitchTab({tab: Tabs.settingsTab})),
   }),
   (stateProps, dispatchProps, ownProps: TodoOwnProps) => ({
     ...ownProps,
@@ -237,7 +237,7 @@ const VerifyAllPhoneNumberConnector = connect(
   mapStateToProps,
   dispatch => ({
     onConfirm: () => {},
-    onManage: () => {},
+    onManage: () => dispatch(RouteTreeGen.createSwitchTab({tab: Tabs.settingsTab})),
   }),
   (stateProps, dispatchProps, ownProps: TodoOwnProps) => ({
     ...ownProps,
