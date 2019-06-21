@@ -17,10 +17,6 @@ export type Props = {
   icon: Kb.IconType
   instructions: string
   subText: string
-  confirmLabel: string
-  dismissable: boolean
-  onConfirm: () => void
-  onDismiss: () => void
   showSearchBar?: boolean
   buttons: Array<TaskButton>
 }
@@ -33,21 +29,10 @@ export const Task = (props: Props) => (
     <Kb.Text type="BodySmall">{props.subText}</Kb.Text>
     <Kb.Box style={styles.actionContainer}>
       {props.showSearchBar && <PeopleSearch style={styles.search} />}
-      {props.confirmLabel !== '' && (
-        <Kb.Button
-          small={true}
-          label={props.confirmLabel}
-          onClick={props.onConfirm}
-          style={{marginRight: Styles.globalMargins.tiny}}
-        />
-      )}
       {props.buttons.length > 0 &&
         props.buttons.map(b => (
           <Kb.Button key={b.label} small={true} style={{marginRight: Styles.globalMargins.tiny}} {...b} />
         ))}
-      {props.dismissable && (
-        <Kb.Button small={true} type="Default" mode="Secondary" onClick={props.onDismiss} label="Later" />
-      )}
     </Kb.Box>
   </PeopleItem>
 )
