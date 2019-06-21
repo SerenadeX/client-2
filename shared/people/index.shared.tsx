@@ -21,7 +21,6 @@ export const itemToComponent: (item: Types.PeopleScreenItem, props: Props) => Re
           todoType={item.todoType}
           instructions={item.instructions}
           confirmLabel={item.confirmLabel}
-          dismissable={item.dismissable}
           icon={item.icon}
           key={item.todoType}
           subText={''}

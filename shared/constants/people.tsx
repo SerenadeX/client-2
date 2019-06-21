@@ -157,7 +157,6 @@ export const reduceRPCItemToPeopleItem = (
       makeTodo({
         badged: badged,
         confirmLabel: todoTypeToConfirmLabel[todoType],
-        dismissable: todoTypeToDismissable[todoType],
         icon: todoTypeToIcon[todoType],
         instructions: makeDescriptionForTodoItem(item.data.todo),
         todoType,

@@ -15,7 +15,6 @@ import openURL from '../../util/open-url'
 type TodoOwnProps = {
   badged: boolean
   confirmLabel: string
-  dismissable: boolean
   icon: IconType
   instructions: string
   subText: string
@@ -55,7 +54,7 @@ function makeDefaultButtons(opts: TodoButtonOpts) {
 const AddEmailConnector = connect(
   mapStateToProps,
   dispatch => ({
-    onConfirm: () => dispatch(ProfileGen.createEditAvatar()),
+    onConfirm: () => {},
     onDismiss: onSkipTodo('addEmail', dispatch),
   }),
   (_, d, o: TodoOwnProps) => ({...o, buttons: makeDefaultButtons({...d, ...o})})
@@ -64,7 +63,7 @@ const AddEmailConnector = connect(
 const AddPhoneNumberConnector = connect(
   mapStateToProps,
   dispatch => ({
-    onConfirm: () => dispatch(ProfileGen.createEditAvatar()),
+    onConfirm: () => {},
     onDismiss: onSkipTodo('addPhoneNumber', dispatch),
   }),
   (_, d, o: TodoOwnProps) => ({...o, buttons: makeDefaultButtons({...d, ...o})})
@@ -213,7 +212,7 @@ const TeamShowcaseConnector = connect(
 const VerifyAllEmailConnector = connect(
   mapStateToProps,
   dispatch => ({
-    onConfirm: () => dispatch(ProfileGen.createEditAvatar()),
+    onConfirm: () => {},
     onManage: () => {},
   }),
   (stateProps, dispatchProps, ownProps: TodoOwnProps) => ({
@@ -237,7 +236,7 @@ const VerifyAllEmailConnector = connect(
 const VerifyAllPhoneNumberConnector = connect(
   mapStateToProps,
   dispatch => ({
-    onConfirm: () => dispatch(ProfileGen.createEditAvatar()),
+    onConfirm: () => {},
     onManage: () => {},
   }),
   (stateProps, dispatchProps, ownProps: TodoOwnProps) => ({
@@ -261,7 +260,7 @@ const VerifyAllPhoneNumberConnector = connect(
 const LegacyEmailVisibilityConnector = connect(
   mapStateToProps,
   dispatch => ({
-    onConfirm: () => dispatch(ProfileGen.createEditAvatar()),
+    onConfirm: () => {},
     onDismiss: onSkipTodo('legacyEmailVisibility', dispatch),
   }),
   (stateProps, dispatchProps, ownProps: TodoOwnProps) => ({
