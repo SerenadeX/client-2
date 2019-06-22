@@ -118,7 +118,7 @@ const publicityTaskProps = {
   instructions: `Tip: Keybase team chats are private, but you can choose to publish that you're an admin. Check out “Publicity settings" on any team you manage.`,
 } as const
 
-const verifyEmail = {
+const verifyEmailProps = {
   badged: true,
   buttons: [
     {
@@ -137,7 +137,7 @@ const verifyEmail = {
   instructions: `Your email address *test@example.com* is unverified.`,
 } as const
 
-const verifyPhoneNumber = {
+const verifyPhoneNumberProps = {
   badged: true,
   buttons: [
     {
@@ -156,6 +156,26 @@ const verifyPhoneNumber = {
   instructions: `Your number *+1555000111* is unverified.`,
 } as const
 
+const legacyEmailVisibilityProps = {
+  badged: true,
+  buttons: [
+    {
+      label: 'Make searchable',
+      onClick: action('onConfirm'),
+      type: 'Success',
+    },
+    {
+      label: 'No',
+      mode: 'Secondary',
+      onClick: action('onDismiss'),
+      type: 'Default',
+    },
+  ] as Array<TaskButton>,
+  icon: 'icon-onboarding-email-searchable-48',
+  instructions: `Allow friends to find you using *test@example.com*`,
+  subText: 'Your email will never appear on your public profile.',
+} as const
+
 const load = () => {
   const stories = storiesOf('People/Todos', module)
     .addDecorator(SearchBarProvider)
@@ -172,8 +192,9 @@ const load = () => {
     .add('Make a folder', () => <Task {...folderTaskProps} />)
     .add('Make a git', () => <Task {...gitTaskProps} />)
     .add('Set publicity', () => <Task {...publicityTaskProps} />)
-    .add('Verify phone number', () => <Task {...verifyPhoneNumber} />)
-    .add('Verify email', () => <Task {...verifyEmail} />)
+    .add('Verify phone number', () => <Task {...verifyPhoneNumberProps} />)
+    .add('Verify email', () => <Task {...verifyEmailProps} />)
+    .add('Legacy email discoverability', () => <Task {...legacyEmailVisibilityProps} />)
 }
 
 export default load
