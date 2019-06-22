@@ -13,7 +13,9 @@ func getUserDataForItem(mctx libkb.MetaContext, item *keybase1.HomeScreenItem) e
 	todoItem := item.Data.Todo()
 	// We can't do todoItem.T() here because it would return an error because
 	// variants we are getting from the server are incomplete. We are expected
-	// to fill them here in this function.
+	// to fill them here in this function. Also we want to be modifying
+	// existing HomeScreenTodo objects in place, so we can't use accessor
+	// methods.
 	todoType := todoItem.T__
 	switch todoType {
 	case keybase1.HomeScreenTodoType_VERIFY_ALL_PHONE_NUMBER:

@@ -83,27 +83,6 @@ export const todoTypeToConfirmLabel: {[K in Types.TodoType]: string} = {
   verifyAllEmail: 'Verify',
   verifyAllPhoneNumber: 'Verify',
 }
-export const todoTypeToDismissable: {[K in Types.TodoType]: boolean} = {
-  addEmail: true,
-  addPhoneNumber: true,
-  annoncementPlaceholder: false,
-  avatarTeam: false,
-  avatarUser: false,
-  bio: false,
-  chat: true,
-  device: true,
-  folder: true,
-  follow: true,
-  gitRepo: true,
-  legacyEmailVisibility: true,
-  none: false,
-  paperkey: false,
-  proof: true,
-  team: true,
-  teamShowcase: true,
-  verifyAllEmail: false,
-  verifyAllPhoneNumber: false,
-}
 
 export const todoTypeToIcon: {[K in Types.TodoType]: IconType} = {
   addEmail: 'icon-onboarding-email-add-48',
@@ -127,7 +106,7 @@ export const todoTypeToIcon: {[K in Types.TodoType]: IconType} = {
   verifyAllPhoneNumber: 'icon-onboarding-number-verify-48',
 } as const
 
-function makeDescriptionForTodoItem(todo: RPCTypes.HomeScreenTodo) {
+export function makeDescriptionForTodoItem(todo: RPCTypes.HomeScreenTodo) {
   const T = RPCTypes.HomeScreenTodoType
   switch (todo.t) {
     case T.legacyEmailVisibility:

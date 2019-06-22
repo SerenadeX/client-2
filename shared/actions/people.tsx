@@ -50,7 +50,6 @@ const getPeopleData = (state, action: PeopleGen.GetPeopleDataPayload) => {
             Constants.makeTodo({
               badged: true,
               confirmLabel: Constants.todoTypeToConfirmLabel[todoType],
-              dismissable: Constants.todoTypeToDismissable[todoType],
               icon: Constants.todoTypeToIcon[todoType],
               instructions: Constants.todoTypeToInstructions[todoType],
               todoType,
