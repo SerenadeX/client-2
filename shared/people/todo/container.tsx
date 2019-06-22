@@ -271,8 +271,13 @@ const LegacyEmailVisibilityConnector = connect(
         onClick: dispatchProps.onConfirm,
         type: 'Success',
       },
+      {
+        label: 'No',
+        mode: 'Secondary',
+        onClick: dispatchProps.onDismiss,
+        type: 'Default',
+      },
     ] as Array<TaskButton>,
-    onDismiss: dispatchProps.onDismiss,
     subText: 'Your email will never appear on your public profile.',
   })
 )(Task)
