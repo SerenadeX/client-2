@@ -50,7 +50,7 @@ export const todoTypeToInstructions: {[K in Types.TodoType]: string} = {
   follow:
     'Follow at least one person on Keybase. A "follow" is a signed snapshot of someone. It strengthens Keybase and your own security.',
   gitRepo:
-    'Create an encrypted Git repository! Only you will be able to decrypt any of it. And it’s so easy!',
+    'Create an encrypted Git repository! Only you (and teammates) will be able to decrypt any of it. And it’s so easy!',
   legacyEmailVisibility: '',
   none: '',
   paperkey:

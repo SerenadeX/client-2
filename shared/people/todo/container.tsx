@@ -187,17 +187,35 @@ const FolderConnector = connect(
 const GitRepoConnector = connect(
   () => ({}),
   dispatch => ({
-    onConfirm: () => {
+    onConfirm: (isTeam: boolean) => {
       if (isMobile) {
         dispatch(RouteTreeGen.createNavigateAppend({path: [SettingsTabs.gitTab]}))
       } else {
         dispatch(RouteTreeGen.createSwitchTab({tab: Tabs.gitTab}))
       }
-      dispatch(RouteTreeGen.createNavigateAppend({path: [{props: {isTeam: false}, selected: 'gitNewRepo'}]}))
+      dispatch(RouteTreeGen.createNavigateAppend({path: [{props: {isTeam}, selected: 'gitNewRepo'}]}))
     },
     onDismiss: onSkipTodo('gitRepo', dispatch),
   }),
-  (_, d, o: TodoOwnProps) => ({...o, buttons: makeDefaultButtons({...d, ...o})})
+  (_, dispatchProps, ownProps: TodoOwnProps) => ({
+    ...ownProps,
+    buttons: [
+      {
+        label: 'Create a personal repo',
+        onClick: () => dispatchProps.onConfirm(false),
+      },
+      {
+        label: 'Create a team repo',
+        onClick: () => dispatchProps.onConfirm(true),
+      },
+      {
+        label: 'Later',
+        mode: 'Secondary',
+        onClick: dispatchProps.onDismiss,
+        type: 'Default',
+      },
+    ] as Array<TaskButton>,
+  })
 )(Task)
 
 const TeamShowcaseConnector = connect(

@@ -105,10 +105,25 @@ const folderTaskProps = {
 
 const gitTaskProps = {
   badged: true,
-  buttons: defaultButtons('Create a personal git repo', 'Later'),
+  buttons: [
+    {
+      label: 'Create a personal repo',
+      onClick: action('onPersonalRepo'),
+    },
+    {
+      label: 'Create a team repo',
+      onClick: action('onTeamRepo'),
+    },
+    {
+      label: 'Later',
+      mode: 'Secondary',
+      onClick: action('onDismiss'),
+      type: 'Default',
+    },
+  ] as Array<TaskButton>,
   icon: 'icon-onboarding-git-48',
   instructions:
-    'Create an encrypted Git repository! Only you will be able to decrypt any of it. And it’s so easy!',
+    'Create an encrypted Git repository! Only you (and teammates) will be able to decrypt any of it. And it’s so easy!',
 } as const
 
 const publicityTaskProps = {
