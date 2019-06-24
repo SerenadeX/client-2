@@ -5,13 +5,14 @@ import * as SignupGen from '../../actions/signup-gen'
 import HiddenString from '../../util/hidden-string'
 import Login from '.'
 import {connect, TypedState, TypedDispatch} from '../../util/container'
+import * as I from 'immutable'
 
 type OwnProps = {
   navigateAppend: (...args: Array<any>) => any
 }
 
 const mapStateToProps = (state: TypedState) => ({
-  _users: state.config.configuredAccounts.map(account => account.username).toArray(),
+  _users: state.config.configuredAccounts,
   error: state.login.error.stringValue(),
   selectedUser: state.config.defaultUsername,
 })
@@ -26,7 +27,10 @@ const mapDispatchToProps = (dispatch: TypedDispatch, ownProps: OwnProps) => ({
 })
 
 const mergeProps = (stateProps: ReturnType<typeof mapStateToProps>, dispatchProps) => {
-  const users = stateProps._users.sort()
+  const users = stateProps._users
+    .map(account => account.username)
+    .sort()
+    .toArray()
   let inputError = ''
   let bannerError = ''
   if (stateProps.error === 'You are offline.') {
@@ -38,6 +42,7 @@ const mergeProps = (stateProps: ReturnType<typeof mapStateToProps>, dispatchProp
   return {
     bannerError,
     inputError,
+    loggedInMap: I.Map(stateProps._users.map(account => [account.username, account.hasStoredSecret])),
     onFeedback: dispatchProps.onFeedback,
     onForgotPassword: dispatchProps.onForgotPassword,
     onLogin: dispatchProps.onLogin,
@@ -56,15 +61,16 @@ type State = {
 }
 
 type Props = {
-  users: Array<string>
-  onForgotPassword: () => void
-  onSignup: () => void
-  onSomeoneElse: () => void
   bannerError: string
   inputError: string
-  selectedUser: string
+  loggedInMap: I.Map<string, boolean>
   onFeedback: () => void
+  onForgotPassword: () => void
   onLogin: (user: string, password: string) => void
+  onSignup: () => void
+  onSomeoneElse: () => void
+  selectedUser: string
+  users: Array<string>
 }
 
 class LoginWrapper extends React.Component<Props, State> {
@@ -75,6 +81,13 @@ class LoginWrapper extends React.Component<Props, State> {
       password: '',
       selectedUser: props.selectedUser,
       showTyping: false,
+    }
+  }
+
+  _selectedUserChange = (selectedUser: string) => {
+    this.setState({selectedUser})
+    if (this.props.loggedInMap.get(selectedUser, false)) {
+      this.props.onLogin(selectedUser, '')
     }
   }
 
@@ -103,7 +116,7 @@ class LoginWrapper extends React.Component<Props, State> {
         password={this.state.password}
         passwordChange={password => this.setState({password})}
         selectedUser={this.state.selectedUser}
-        selectedUserChange={selectedUser => this.setState({selectedUser})}
+        selectedUserChange={this._selectedUserChange}
         showTypingChange={showTyping => this.setState({showTyping})}
         showTyping={this.state.showTyping}
         users={this.props.users}

@@ -13,8 +13,7 @@ const mapStateToProps = (state: TypedState) => ({
     .map(account => account.username),
 })
 const mapDispatchToProps = (dispatch: TypedDispatch, ownProps: OwnProps) => ({
-  onLogIn: (username: string) =>
-    dispatch(LoginGen.createLogin({doUserSwitch: true, password: null, username})),
+  onLogIn: (username: string) => dispatch(LoginGen.createLogin({password: null, username})),
   onResetAccount: () => {
     dispatch(LoginGen.createLaunchAccountResetWebPage())
     dispatch(ownProps.navigateUp())

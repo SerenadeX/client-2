@@ -227,6 +227,8 @@ export default function(state: Types.State = initialState, action: Actions): Typ
         configuredAccounts: I.List(action.payload.configuredAccounts.map(Constants.makeConfiguredAccount)),
         defaultUsername,
       })
+    case ConfigGen.setDefaultUsername:
+      return state.merge({defaultUsername: action.payload.username})
     case ConfigGen.setDeletedSelf:
       return state.merge({justDeletedSelf: action.payload.deletedUsername})
     case ConfigGen.daemonHandshakeDone:

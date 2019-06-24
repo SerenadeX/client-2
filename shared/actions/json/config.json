@@ -76,6 +76,9 @@
       "defaultUsername": "string",
       "configuredAccounts": "Array<RPCTypes.ConfiguredAccount>"
     },
+    "setDefaultUsername": {
+      "username": "string"
+    },
     "globalError": {"globalError": "null | Error | RPCError"},
     "pushLoaded": {"pushLoaded": "boolean"},
     "setStartupDetails": {

@@ -2,9 +2,8 @@
   "prelude": ["import HiddenString from '../util/hidden-string'"],
   "actions": {
     "login": {
-      "doUserSwitch?": "boolean | null",
       "username": "string",
-      "password": "HiddenString | null"
+      "password": "HiddenString"
     },
     "launchAccountResetWebPage": {},
     "launchForgotPasswordWebPage": {},

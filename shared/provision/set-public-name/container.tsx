@@ -27,8 +27,7 @@ const mapStateToProps = (state: TypedState) => ({
 
 const mapDispatchToProps = (dispatch: TypedDispatch, ownProps: OwnProps) => ({
   _onSubmit: (name: string) => dispatch(ProvisionGen.createSubmitDeviceName({name})),
-  onLogIn: (username: string) =>
-    dispatch(LoginGen.createLogin({doUserSwitch: true, password: null, username})),
+  onLogIn: (username: string) => dispatch(LoginGen.createLogin({password: null, username})),
 })
 
 export default compose(

@@ -46,24 +46,25 @@ class TabBar extends React.PureComponent<Props, State> {
   _getAttachmentRef = () => this._attachmentRef.current
   _showMenu = () => this.setState({showingMenu: true})
   _hideMenu = () => this.setState({showingMenu: false})
+  _onClickWrapper = () => {
+    this._hideMenu()
+    this.props.onProfileClick()
+  }
   _menuHeader = () => ({
     onClick: this.props.onProfileClick,
     title: '',
     view: (
-      <Kb.Box2 direction="vertical" gap="small" gapStart={true}>
+      <Kb.ClickableBox onClick={this._onClickWrapper} style={styles.headerBox}>
         <Kb.ConnectedNameWithIcon
           username={this.props.username}
-          onClick={() => {
-            this._hideMenu()
-            this.props.onProfileClick()
-          }}
+          onClick={this._onClickWrapper}
           metaTwo={
-            <Kb.Text type="BodySmall" lineClamp={1}>
+            <Kb.Text type="BodySmall" lineClamp={1} style={styles.fullname}>
               {this.props.fullname}
             </Kb.Text>
           }
         />
-      </Kb.Box2>
+      </Kb.ClickableBox>
     ),
   })
   _menuItems = () =>
@@ -188,7 +189,11 @@ const styles = Styles.styleSheetCreate({
   },
   caret: {marginRight: 12},
   divider: {marginTop: Styles.globalMargins.tiny},
+  fullname: {maxWidth: 180},
   header: {height: 80, marginBottom: 20},
+  headerBox: {
+    paddingTop: Styles.globalMargins.small,
+  },
   iconBox: {
     justifyContent: 'flex-end',
     position: 'relative',
