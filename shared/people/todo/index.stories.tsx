@@ -22,7 +22,6 @@ const defaultButtons = (label, dismissLabel?) => {
       label: dismissLabel,
       mode: 'Secondary',
       onClick: action('onDismiss'),
-      type: 'Default',
     })
   }
   return ret
@@ -118,7 +117,6 @@ const gitTaskProps = {
       label: 'Later',
       mode: 'Secondary',
       onClick: action('onDismiss'),
-      type: 'Default',
     },
   ] as Array<TaskButton>,
   icon: 'icon-onboarding-git-48',
@@ -145,7 +143,6 @@ const verifyEmailProps = {
       label: 'Manage emails',
       mode: 'Secondary',
       onClick: action('onManage'),
-      type: 'Default',
     },
   ] as Array<TaskButton>,
   icon: 'icon-onboarding-email-verify-48',
@@ -164,7 +161,6 @@ const verifyPhoneNumberProps = {
       label: 'Manage numbers',
       mode: 'Secondary',
       onClick: action('onManage'),
-      type: 'Default',
     },
   ] as Array<TaskButton>,
   icon: 'icon-onboarding-number-verify-48',
@@ -183,7 +179,6 @@ const legacyEmailVisibilityProps = {
       label: 'No',
       mode: 'Secondary',
       onClick: action('onDismiss'),
-      type: 'Default',
     },
   ] as Array<TaskButton>,
   icon: 'icon-onboarding-email-searchable-48',
