@@ -16,7 +16,6 @@ export type Props = {
   fullname: string
   onCancel: () => void
   onProfileClick: () => void
-  onSignOut: () => void
   username: string
 } & RowsProps &
   HeaderHocProps
@@ -29,6 +28,7 @@ const AccountRow = ({
   onSelectAccount: (username: string) => void
 }) => (
   <Kb.NameWithIcon
+    clickType={onSelectAccount}
     horizontal={true}
     username={entry.username}
     metaOne={

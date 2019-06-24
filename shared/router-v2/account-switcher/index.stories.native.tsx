@@ -22,7 +22,6 @@ const props: Props = {
   onCreateAccount: Sb.action('onCreateAccount'),
   onProfileClick: Sb.action('onProfileClick'),
   onSelectAccount: Sb.action('onSelectAccount'),
-  onSignOut: Sb.action('onSignOut'),
   rightActions: [
     {
       // TODO: color: 'red',

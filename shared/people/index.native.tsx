@@ -11,13 +11,7 @@ export const Header = (props: Props) => (
     underNotch={true}
     rightActions={[
       {
-        custom: (
-          <Kb.Avatar
-            username={props.myUsername}
-            onClick={() => props.onClickUser(props.myUsername)}
-            size={32}
-          />
-        ),
+        custom: <Kb.Avatar username={props.myUsername} onClick={props.onOpenAccountSwitcher} size={32} />,
         label: 'Avatar',
       },
     ]}
