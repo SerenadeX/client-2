@@ -11,6 +11,7 @@ export type Props = {
   equivBalance: string // non-empty only if native currency
   expanded?: boolean // for testing
   infoUrlText: string
+  isNative: boolean
   issuerName: string // verified issuer domain name, 'Stellar network' or 'Unknown'
   issuerAccountID: string // issuing public key
   name: string // Asset code or 'Lumens'
@@ -32,9 +33,9 @@ export default class Asset extends React.Component<Props, State> {
     }))
   }
 
-  _openInfoURL = e => {
+  _openInfoURL = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
     e.stopPropagation()
-    this.props.openInfoURL()
+    this.props.openInfoURL && this.props.openInfoURL()
   }
 
   render() {
@@ -73,7 +74,7 @@ export default class Asset extends React.Component<Props, State> {
         </Kb.ClickableBox>
         {this.state.expanded && (
           <Kb.Box2 direction="horizontal" fullWidth={true} style={styles.expandedRowContainer}>
-            {this.props.code === 'XLM' && (
+            {this.props.isNative && (
               <BalanceSummary
                 availableToSend={this.props.availableToSend}
                 equivAvailableToSend={this.props.equivAvailableToSend}
@@ -156,9 +157,9 @@ type IssuerAccountIDProps = {
 }
 
 const IssuerAccountID = (props: IssuerAccountIDProps) => (
-  <Kb.Box2 direction="vertical" fullWidth={true} style={styles.balanceSummaryContainer}>
+  <Kb.Box2 direction="vertical" fullWidth={true}>
     <Kb.Text type="Body">Issuer:</Kb.Text>
-    <Kb.Text type="Body" selectable={true}>
+    <Kb.Text type="Body" selectable={true} lineClamp={3}>
       {props.issuerAccountID}
     </Kb.Text>
   </Kb.Box2>

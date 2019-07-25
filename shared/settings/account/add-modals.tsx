@@ -8,7 +8,7 @@ import * as SettingsGen from '../../actions/settings-gen'
 import {EnterEmailBody} from '../../signup/email/'
 import {EnterPhoneNumberBody} from '../../signup/phone-number/'
 import {VerifyBody} from '../../signup/phone-number/verify'
-import {Props as HeaderHocProps} from '../../common-adapters/header-hoc/types'
+import {e164ToDisplay} from '../../util/phone-numbers'
 
 export const Email = () => {
   const dispatch = Container.useDispatch()
@@ -30,7 +30,7 @@ export const Email = () => {
       // success
       dispatch(RouteTreeGen.createClearModals())
     }
-  }, [addedEmail, dispatch])
+  }, [addEmailInProgress, addedEmail, dispatch])
 
   const onClose = React.useCallback(() => dispatch(RouteTreeGen.createNavigateUp()), [dispatch])
   const onContinue = React.useCallback(() => {
@@ -85,7 +85,11 @@ export const Email = () => {
           }
         />
       </Kb.Box2>
-      {!!emailError && <Kb.Banner color="red" text={emailError.message} style={styles.banner} />}
+      {!!emailError && (
+        <Kb.Banner color="red" style={styles.banner}>
+          <Kb.BannerParagraph bannerColor="red" content={emailError.message} />
+        </Kb.Banner>
+      )}
     </Kb.Modal>
   )
 }
@@ -110,7 +114,11 @@ export const Phone = () => {
     }
   }, [dispatch, error, pendingVerification])
 
-  const onClose = React.useCallback(() => dispatch(RouteTreeGen.createNavigateUp()), [dispatch])
+  const onClose = React.useCallback(() => {
+    dispatch(SettingsGen.createClearPhoneNumberAdd())
+    dispatch(RouteTreeGen.createNavigateUp())
+  }, [dispatch])
+
   const onContinue = React.useCallback(
     () =>
       disabled || waiting ? null : dispatch(SettingsGen.createAddPhoneNumber({allowSearch, phoneNumber})),
@@ -163,7 +171,11 @@ export const Phone = () => {
           }
         />
       </Kb.Box2>
-      {!!error && <Kb.Banner color="red" text={error} style={styles.banner} />}
+      {!!error && (
+        <Kb.Banner color="red" style={styles.banner}>
+          <Kb.BannerParagraph bannerColor="red" content={error} />
+        </Kb.Banner>
+      )}
     </Kb.Modal>
   )
 }
@@ -175,7 +187,10 @@ export const VerifyPhone = () => {
   const pendingVerification = Container.useSelector(state => state.settings.phoneNumbers.pendingVerification)
   const error = Container.useSelector(state => state.settings.phoneNumbers.error)
   const verificationState = Container.useSelector(state => state.settings.phoneNumbers.verificationState)
-  const resendWaiting = Container.useAnyWaiting(Constants.addPhoneNumberWaitingKey)
+  const resendWaiting = Container.useAnyWaiting(
+    Constants.addPhoneNumberWaitingKey,
+    Constants.resendVerificationForPhoneWaitingKey
+  )
   const verifyWaiting = Container.useAnyWaiting(Constants.verifyPhoneNumberWaitingKey)
 
   // clean everything on unmount
@@ -188,8 +203,8 @@ export const VerifyPhone = () => {
   }, [verificationState, error, dispatch])
 
   const onResend = React.useCallback(
-    () => dispatch(SettingsGen.createAddPhoneNumber({allowSearch: false, phoneNumber: '', resend: true})),
-    [dispatch]
+    () => dispatch(SettingsGen.createResendVerificationForPhoneNumber({phoneNumber: pendingVerification})),
+    [dispatch, pendingVerification]
   )
   const onClose = React.useCallback(() => {
     dispatch(SettingsGen.createClearPhoneNumberAdd())
@@ -200,13 +215,19 @@ export const VerifyPhone = () => {
     [dispatch, code, pendingVerification]
   )
   const disabled = !code
+
+  const displayPhone = e164ToDisplay(pendingVerification)
   return (
     <Kb.Modal
       onClose={onClose}
       header={{
         hideBorder: true,
         style: styles.blueBackground,
-        title: <Kb.Text type="BodySmall">{pendingVerification || 'wut'}</Kb.Text>,
+        title: (
+          <Kb.Text type="BodySmall" negative={true}>
+            {displayPhone || 'Unknown number'}
+          </Kb.Text>
+        ),
       }}
       footer={{
         content: (
@@ -244,7 +265,11 @@ export const VerifyPhone = () => {
           onChangeCode={onChangeCode}
         />
       </Kb.Box2>
-      {!!error && <Kb.Banner color="red" text={error} style={styles.banner} />}
+      {!!error && (
+        <Kb.Banner color="red" style={styles.banner}>
+          <Kb.BannerParagraph bannerColor="red" content={error} />
+        </Kb.Banner>
+      )}
     </Kb.Modal>
   )
 }

@@ -64,25 +64,20 @@ const (
 type branchType int
 
 const (
-	standard       branchType = iota // an online, read-write branch
-	archive                          // an online, read-only branch
-	offline                          // an offline, read-write branch
-	archiveOffline                   // an offline, read-only branch
-	conflict                         // a cleared, local conflict branch
+	standard branchType = iota // an online, read-write branch
+	archive                    // an online, read-only branch
+	offline                    // an offline, read-write branch
+	conflict                   // a cleared, local conflict branch
 )
 
 // Constants used in this file.  TODO: Make these configurable?
 const (
 	// Maximum number of blocks that can be sent in parallel
 	maxParallelBlockPuts = 100
-	// Maximum number of blocks that can be fetched in parallel
-	maxParallelBlockGets = 10
 	// Max response size for a single DynamoDB query is 1MB.
 	maxMDsAtATime = 10
 	// Cap the number of times we retry after a recoverable error
 	maxRetriesOnRecoverableErrors = 10
-	// When the number of dirty bytes exceeds this level, force a sync.
-	dirtyBytesThreshold = maxParallelBlockPuts * data.MaxBlockSizeBytesDefault
 	// If it's been more than this long since our last update, check
 	// the current head before downloading all of the new revisions.
 	fastForwardTimeThresh = 15 * time.Minute
@@ -2749,18 +2744,12 @@ func (fbo *folderBranchOps) initMDLocked(
 		mdOps = jManager.delegateMDOps
 	}
 	irmd, err := mdOps.Put(
-		ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal)
+		ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal, bps)
 	isConflict := isRevisionConflict(err)
 	if err != nil && !isConflict {
 		return err
 	} else if isConflict {
 		return RekeyConflictError{err}
-	}
-
-	md, irmd, err = fbo.loadCachedMDChanges(ctx, bps,
-		session.VerifyingKey, md, irmd)
-	if err != nil {
-		return err
 	}
 
 	fbo.headLock.Lock(lState)
@@ -3638,13 +3627,13 @@ func (fbo *folderBranchOps) finalizeBlocks(
 		return nil
 	}
 	bcache := fbo.config.BlockCache()
-	for _, newPtr := range bps.ptrs() {
+	for _, newPtr := range bps.Ptrs() {
 		// only cache this block if we made a brand new block, not if
 		// we just incref'd some other block.
 		if !newPtr.IsFirstRef() {
 			continue
 		}
-		block, err := bps.getBlock(ctx, newPtr)
+		block, err := bps.GetBlock(ctx, newPtr)
 		if err != nil {
 			fbo.log.CDebugf(ctx, "Error getting block for %v: %+v", newPtr, err)
 		}
@@ -3817,25 +3806,6 @@ func (fbo *folderBranchOps) handleUnflushedEditNotifications(
 	return nil
 }
 
-func (fbo *folderBranchOps) loadCachedMDChanges(ctx context.Context,
-	bps blockPutState, key kbfscrypto.VerifyingKey, md *RootMetadata,
-	irmd ImmutableRootMetadata) (*RootMetadata, ImmutableRootMetadata, error) {
-	md, copied := md.loadCachedBlockChanges(
-		ctx, bps, fbo.log, fbo.vlog, fbo.config.Codec())
-
-	if copied {
-		irmd = MakeImmutableRootMetadata(
-			md, key, irmd.mdID, fbo.config.Clock().Now(), irmd.putToServer)
-
-		err := fbo.config.MDCache().Replace(irmd, irmd.BID())
-		if err != nil {
-			return nil, ImmutableRootMetadata{}, err
-		}
-	}
-	return md, irmd, nil
-
-}
-
 func (fbo *folderBranchOps) finalizeMDWriteLocked(ctx context.Context,
 	lState *kbfssync.LockState, md *RootMetadata, bps blockPutState, excl Excl,
 	notifyFn func(ImmutableRootMetadata) error) (
@@ -3897,7 +3867,7 @@ func (fbo *folderBranchOps) finalizeMDWriteLocked(ctx context.Context,
 	if isMerged {
 		// only do a normal Put if we're not already staged.
 		irmd, err = mdops.Put(
-			ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal)
+			ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal, bps)
 		if doUnmergedPut = isRevisionConflict(err); doUnmergedPut {
 			fbo.log.CDebugf(ctx, "Conflict: %v", err)
 			mergedRev = md.Revision()
@@ -3925,7 +3895,7 @@ func (fbo *folderBranchOps) finalizeMDWriteLocked(ctx context.Context,
 	if doUnmergedPut {
 		// We're out of date, and this is not an exclusive write, so put it as an
 		// unmerged MD.
-		irmd, err = mdops.PutUnmerged(ctx, md, session.VerifyingKey)
+		irmd, err = mdops.PutUnmerged(ctx, md, session.VerifyingKey, bps)
 		if isRevisionConflict(err) {
 			// Self-conflicts are retried in `doMDWriteWithRetry`.
 			return UnmergedSelfConflictError{err}
@@ -3982,12 +3952,6 @@ func (fbo *folderBranchOps) finalizeMDWriteLocked(ctx context.Context,
 			// theoretically possible.
 			defer fbo.config.RekeyQueue().Enqueue(md.TlfID())
 		}
-	}
-
-	md, irmd, err = fbo.loadCachedMDChanges(ctx, bps,
-		session.VerifyingKey, md, irmd)
-	if err != nil {
-		return err
 	}
 
 	rebased := (oldPrevRoot != md.PrevRoot())
@@ -4114,7 +4078,7 @@ func (fbo *folderBranchOps) finalizeMDRekeyWriteLocked(ctx context.Context,
 		key = session.VerifyingKey
 	}
 
-	irmd, err := mdOps.Put(ctx, md, key, nil, keybase1.MDPriorityNormal)
+	irmd, err := mdOps.Put(ctx, md, key, nil, keybase1.MDPriorityNormal, nil)
 	isConflict := isRevisionConflict(err)
 	if err != nil && !isConflict {
 		return err
@@ -4137,11 +4101,6 @@ func (fbo *folderBranchOps) finalizeMDRekeyWriteLocked(ctx context.Context,
 		unmergedBID := md.BID()
 		fbo.setBranchIDLocked(lState, unmergedBID)
 		fbo.cr.Resolve(ctx, md.Revision(), kbfsmd.RevisionUninitialized)
-	}
-
-	md, irmd, err = fbo.loadCachedMDChanges(ctx, nil, key, md, irmd)
-	if err != nil {
-		return err
 	}
 
 	fbo.headLock.Lock(lState)
@@ -4195,7 +4154,7 @@ func (fbo *folderBranchOps) finalizeGCOpLocked(
 
 	// finally, write out the new metadata
 	irmd, err := fbo.config.MDOps().Put(
-		ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal)
+		ctx, md, session.VerifyingKey, nil, keybase1.MDPriorityNormal, bps)
 	if err != nil {
 		// Don't allow garbage collection to put us into a conflicting
 		// state; just wait for the next period.
@@ -4203,12 +4162,6 @@ func (fbo *folderBranchOps) finalizeGCOpLocked(
 	}
 
 	fbo.setBranchIDLocked(lState, kbfsmd.NullBranchID)
-
-	md, irmd, err = fbo.loadCachedMDChanges(ctx, bps,
-		session.VerifyingKey, md, irmd)
-	if err != nil {
-		return err
-	}
 
 	rebased := (oldPrevRoot != md.PrevRoot())
 	if rebased {
@@ -7377,7 +7330,7 @@ func (fbo *folderBranchOps) SyncFromServer(ctx context.Context,
 		timedOut = true
 	default:
 	}
-	if timedOut || !mdserver.IsConnected() {
+	if lockBeforeGet == nil && (timedOut || !mdserver.IsConnected()) {
 		fbo.vlog.CLogf(
 			ctx, libkb.VLog1, "Not fetching new updates while offline")
 		return nil
@@ -8037,8 +7990,10 @@ func (fbo *folderBranchOps) finalizeResolutionLocked(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	irmd, err := fbo.config.MDOps().ResolveBranch(ctx, fbo.id(), fbo.unmergedBID,
-		blocksToDelete, md, session.VerifyingKey)
+	irmd, err := fbo.config.MDOps().ResolveBranch(
+		ctx, fbo.id(), fbo.unmergedBID, blocksToDelete, md,
+		session.VerifyingKey, bps)
+	md = irmd.ReadOnlyRootMetadata.RootMetadata // un-read-onlyify
 	doUnmergedPut := isRevisionConflict(err)
 	if doUnmergedPut {
 		fbo.log.CDebugf(ctx, "Got a conflict after resolution; aborting CR")
@@ -8051,12 +8006,6 @@ func (fbo *folderBranchOps) finalizeResolutionLocked(ctx context.Context,
 	// Queue a rekey if the bit was set.
 	if md.IsRekeySet() {
 		defer fbo.config.RekeyQueue().Enqueue(md.TlfID())
-	}
-
-	md, irmd, err = fbo.loadCachedMDChanges(ctx, bps,
-		session.VerifyingKey, md, irmd)
-	if err != nil {
-		return err
 	}
 
 	// Set the head to the new MD.

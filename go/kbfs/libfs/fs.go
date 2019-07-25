@@ -66,7 +66,7 @@ type fsInner struct {
 	// this is a naive append without and path clean.
 	lockNamespace []byte
 
-	eventsLock sync.RWMutex
+	eventsLock sync.RWMutex // nolint
 	events     map[chan<- FSEvent]bool
 }
 
@@ -1091,6 +1091,11 @@ func (fs *FS) ToHTTPFileSystem(ctx context.Context) http.FileSystem {
 // RootNode returns the Node of the root directory of this FS.
 func (fs *FS) RootNode() libkbfs.Node {
 	return fs.root
+}
+
+// Handle returns the TLF handle corresponding to this FS.
+func (fs *FS) Handle() *tlfhandle.Handle {
+	return fs.h
 }
 
 type folderHandleChangeObserver func()

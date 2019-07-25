@@ -43,6 +43,7 @@ const (
 	StatusCode_SCRateLimit                                 StatusCode = 602
 	StatusCode_SCBadSignupUsernameTaken                    StatusCode = 701
 	StatusCode_SCBadInvitationCode                         StatusCode = 707
+	StatusCode_SCBadSignupTeamName                         StatusCode = 711
 	StatusCode_SCFeatureFlag                               StatusCode = 712
 	StatusCode_SCMissingResult                             StatusCode = 801
 	StatusCode_SCKeyNotFound                               StatusCode = 901
@@ -68,6 +69,8 @@ const (
 	StatusCode_SCSigWrongKey                               StatusCode = 1008
 	StatusCode_SCSigOldSeqno                               StatusCode = 1010
 	StatusCode_SCSigCreationDisallowed                     StatusCode = 1016
+	StatusCode_SCSigMissingRatchet                         StatusCode = 1021
+	StatusCode_SCSigBadTotalOrder                          StatusCode = 1022
 	StatusCode_SCBadTrackSession                           StatusCode = 1301
 	StatusCode_SCDeviceBadName                             StatusCode = 1404
 	StatusCode_SCDeviceNameInUse                           StatusCode = 1408
@@ -218,6 +221,9 @@ const (
 	StatusCode_SCPhoneNumberWrongVerificationCode          StatusCode = 3403
 	StatusCode_SCPhoneNumberLimitExceeded                  StatusCode = 3404
 	StatusCode_SCNoPaperKeys                               StatusCode = 3605
+	StatusCode_SCTeambotKeyGenerationExists                StatusCode = 3800
+	StatusCode_SCTeambotKeyOldBoxedGeneration              StatusCode = 3801
+	StatusCode_SCTeambotKeyBadGeneration                   StatusCode = 3802
 )
 
 func (o StatusCode) DeepCopy() StatusCode { return o }
@@ -256,6 +262,7 @@ var StatusCodeMap = map[string]StatusCode{
 	"SCRateLimit":                602,
 	"SCBadSignupUsernameTaken":   701,
 	"SCBadInvitationCode":        707,
+	"SCBadSignupTeamName":        711,
 	"SCFeatureFlag":              712,
 	"SCMissingResult":            801,
 	"SCKeyNotFound":              901,
@@ -281,6 +288,8 @@ var StatusCodeMap = map[string]StatusCode{
 	"SCSigWrongKey":              1008,
 	"SCSigOldSeqno":              1010,
 	"SCSigCreationDisallowed":    1016,
+	"SCSigMissingRatchet":        1021,
+	"SCSigBadTotalOrder":         1022,
 	"SCBadTrackSession":          1301,
 	"SCDeviceBadName":            1404,
 	"SCDeviceNameInUse":          1408,
@@ -431,6 +440,9 @@ var StatusCodeMap = map[string]StatusCode{
 	"SCPhoneNumberWrongVerificationCode":          3403,
 	"SCPhoneNumberLimitExceeded":                  3404,
 	"SCNoPaperKeys":                               3605,
+	"SCTeambotKeyGenerationExists":                3800,
+	"SCTeambotKeyOldBoxedGeneration":              3801,
+	"SCTeambotKeyBadGeneration":                   3802,
 }
 
 var StatusCodeRevMap = map[StatusCode]string{
@@ -467,6 +479,7 @@ var StatusCodeRevMap = map[StatusCode]string{
 	602:  "SCRateLimit",
 	701:  "SCBadSignupUsernameTaken",
 	707:  "SCBadInvitationCode",
+	711:  "SCBadSignupTeamName",
 	712:  "SCFeatureFlag",
 	801:  "SCMissingResult",
 	901:  "SCKeyNotFound",
@@ -492,6 +505,8 @@ var StatusCodeRevMap = map[StatusCode]string{
 	1008: "SCSigWrongKey",
 	1010: "SCSigOldSeqno",
 	1016: "SCSigCreationDisallowed",
+	1021: "SCSigMissingRatchet",
+	1022: "SCSigBadTotalOrder",
 	1301: "SCBadTrackSession",
 	1404: "SCDeviceBadName",
 	1408: "SCDeviceNameInUse",
@@ -642,6 +657,9 @@ var StatusCodeRevMap = map[StatusCode]string{
 	3403: "SCPhoneNumberWrongVerificationCode",
 	3404: "SCPhoneNumberLimitExceeded",
 	3605: "SCNoPaperKeys",
+	3800: "SCTeambotKeyGenerationExists",
+	3801: "SCTeambotKeyOldBoxedGeneration",
+	3802: "SCTeambotKeyBadGeneration",
 }
 
 func (e StatusCode) String() string {

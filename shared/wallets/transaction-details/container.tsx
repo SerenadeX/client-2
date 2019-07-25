@@ -11,13 +11,7 @@ import openURL from '../../util/open-url'
 import TransactionDetails from '.'
 import {anyWaiting} from '../../constants/waiting'
 
-type OwnProps = Container.RouteProps<
-  {
-    accountID: Types.AccountID
-    paymentID: Types.PaymentID
-  },
-  {}
->
+type OwnProps = Container.RouteProps<{accountID: Types.AccountID; paymentID: Types.PaymentID}>
 
 const mapStateToProps = (state, ownProps) => {
   const you = state.config.username || ''
@@ -66,7 +60,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   onShowProfile: (username: string) => dispatch(ProfileGen.createShowUserProfile({username})),
 })
 
-const mergeProps = (stateProps, dispatchProps) => {
+const mergeProps = (stateProps, dispatchProps, _: OwnProps) => {
   const tx = stateProps._transaction
   if (stateProps.loading) {
     return {

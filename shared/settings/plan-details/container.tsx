@@ -3,20 +3,14 @@ import PlanDetails from '.'
 import {connect} from '../../util/container'
 import * as RouteTreeGen from '../../actions/route-tree-gen'
 import {priceToString, planToStars} from '../../constants/plan-billing'
-import {AvailablePlan} from '../../constants/types/plan-billing'
 import {PlanLevel} from '../../constants/types/settings'
 import {RouteProps} from '../../route-tree/render-route'
 import {TypedState} from '../../constants/reducer'
 
-type OwnProps = RouteProps<
-  {
-    selectedLevel: PlanLevel
-  },
-  {}
->
+type OwnProps = RouteProps<{selectedLevel: PlanLevel}>
 
 export default connect(
-  (state: TypedState, ownProps: OwnProps) => {
+  (_: TypedState, ownProps: OwnProps) => {
     const selectedLevel = ownProps.routeProps.get('selectedLevel')
     const availablePlan = null // AvailablePlan | null = state.planBilling.availablePlans
     // ? state.planBilling.availablePlans.find(plan => plan.planLevel === selectedLevel)
@@ -26,6 +20,7 @@ export default connect(
     }
 
     return {
+      // @ts-ignore
       gigabytes: availablePlan.gigabytes,
       numStars: planToStars(selectedLevel),
       paymentOption: {
@@ -33,10 +28,11 @@ export default connect(
         type: 'credit-card-no-past',
       },
       plan: selectedLevel,
+      // @ts-ignore
       price: priceToString(availablePlan.price_pennies),
     }
   },
-  (dispatch: any, ownProps: {}) => ({
+  (dispatch: any) => ({
     onBack: () => dispatch(RouteTreeGen.createNavigateUp()),
   }),
   (stateProps, dispatchProps) => ({

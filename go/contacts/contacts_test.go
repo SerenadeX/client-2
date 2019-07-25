@@ -4,10 +4,12 @@
 package contacts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/keybase/client/go/externals"
 	"github.com/keybase/client/go/libkb"
 	"github.com/keybase/client/go/protocol/keybase1"
 	"github.com/stretchr/testify/require"
@@ -20,18 +22,20 @@ type mockLookupUser struct {
 }
 
 type MockContactsProvider struct {
-	t            *testing.T
-	phoneNumbers map[keybase1.RawPhoneNumber]mockLookupUser
-	emails       map[keybase1.EmailAddress]mockLookupUser
-	following    map[keybase1.UID]bool
+	t                 *testing.T
+	phoneNumbers      map[keybase1.RawPhoneNumber]mockLookupUser
+	phoneNumberErrors map[keybase1.RawPhoneNumber]string
+	emails            map[keybase1.EmailAddress]mockLookupUser
+	following         map[keybase1.UID]bool
 }
 
 func makeProvider(t *testing.T) *MockContactsProvider {
 	return &MockContactsProvider{
-		t:            t,
-		phoneNumbers: make(map[keybase1.RawPhoneNumber]mockLookupUser),
-		emails:       make(map[keybase1.EmailAddress]mockLookupUser),
-		following:    make(map[keybase1.UID]bool),
+		t:                 t,
+		phoneNumbers:      make(map[keybase1.RawPhoneNumber]mockLookupUser),
+		phoneNumberErrors: make(map[keybase1.RawPhoneNumber]string),
+		emails:            make(map[keybase1.EmailAddress]mockLookupUser),
+		following:         make(map[keybase1.UID]bool),
 	}
 }
 
@@ -40,52 +44,59 @@ func (c *MockContactsProvider) LookupAll(mctx libkb.MetaContext, emails []keybas
 
 	ret := make(ContactLookupMap)
 	for _, email := range emails {
+
 		if user, found := c.emails[email]; found {
-			ret[fmt.Sprintf("e:%s", string(email))] = ContactLookupResult{UID: user.UID}
+			ret[makeEmailLookupKey(email)] = ContactLookupResult{UID: user.UID}
 		}
 	}
 	for _, number := range numbers {
 		if user, found := c.phoneNumbers[number]; found {
-			ret[fmt.Sprintf("p:%s", string(number))] = ContactLookupResult{UID: user.UID}
+			ret[makePhoneLookupKey(number)] = ContactLookupResult{UID: user.UID}
+		}
+		if errStr, found := c.phoneNumberErrors[number]; found {
+			ret[makePhoneLookupKey(number)] = ContactLookupResult{Error: errStr}
 		}
 	}
 	return ret, nil
 }
 
-func (c *MockContactsProvider) FillUsernames(mctx libkb.MetaContext, res []keybase1.ProcessedContact) {
-	for i, v := range res {
-		require.False(c.t, v.Uid.IsNil())
-		if v.Resolved {
-			var found bool
-			for _, y := range c.phoneNumbers {
-				if y.UID.Equal(v.Uid) {
-					res[i].Username = y.Username
-					res[i].FullName = y.Fullname
-					found = true
-					break
-				}
-			}
-			if found {
-				continue
-			}
-			for _, y := range c.emails {
-				if y.UID.Equal(v.Uid) {
-					res[i].Username = y.Username
-					res[i].FullName = y.Fullname
-					break
-				}
-			}
-		}
+func makeUIDSet(uids []keybase1.UID) (res map[keybase1.UID]struct{}) {
+	res = make(map[keybase1.UID]struct{}, len(uids))
+	for _, v := range uids {
+		res[v] = struct{}{}
 	}
+	return res
 }
 
-func (c *MockContactsProvider) FillFollowing(mctx libkb.MetaContext, res []keybase1.ProcessedContact) {
-	for i, v := range res {
-		require.False(c.t, v.Uid.IsNil())
-		if _, found := c.following[v.Uid]; found {
-			res[i].Following = true
+func (c *MockContactsProvider) FindUsernames(mctx libkb.MetaContext, uids []keybase1.UID) (map[keybase1.UID]ContactUsernameAndFullName, error) {
+	res := make(map[keybase1.UID]ContactUsernameAndFullName)
+	uidSet := makeUIDSet(uids)
+
+	for _, v := range c.phoneNumbers {
+		if _, found := uidSet[v.UID]; found {
+			res[v.UID] = ContactUsernameAndFullName{
+				Username: v.Username,
+				Fullname: v.Fullname,
+			}
 		}
 	}
+	for _, v := range c.emails {
+		if _, found := uidSet[v.UID]; found {
+			res[v.UID] = ContactUsernameAndFullName{
+				Username: v.Username,
+				Fullname: v.Fullname,
+			}
+		}
+	}
+	return res, nil
+}
+
+func (c *MockContactsProvider) FindFollowing(mctx libkb.MetaContext, uids []keybase1.UID) (map[keybase1.UID]bool, error) {
+	res := make(map[keybase1.UID]bool)
+	for _, uid := range uids {
+		res[uid] = c.following[uid]
+	}
+	return res, nil
 }
 
 type ErrorContactsProvider struct {
@@ -99,12 +110,14 @@ func (c *ErrorContactsProvider) LookupAll(mctx libkb.MetaContext, emails []keyba
 	return
 }
 
-func (c *ErrorContactsProvider) FillUsernames(libkb.MetaContext, []keybase1.ProcessedContact) {
-	c.t.Errorf("Call to ErrorContactsProvider.FillUsernames")
+func (c *ErrorContactsProvider) FindUsernames(mctx libkb.MetaContext, uids []keybase1.UID) (map[keybase1.UID]ContactUsernameAndFullName, error) {
+	c.t.Errorf("Call to ErrorContactsProvider.FindUsernames")
+	return nil, errors.New("mock error")
 }
 
-func (c *ErrorContactsProvider) FillFollowing(libkb.MetaContext, []keybase1.ProcessedContact) {
-	c.t.Errorf("Call to ErrorContactsProvider.FillFollowing")
+func (c *ErrorContactsProvider) FindFollowing(mctx libkb.MetaContext, uids []keybase1.UID) (map[keybase1.UID]bool, error) {
+	c.t.Errorf("Call to ErrorContactsProvider.FindFollowing")
+	return nil, errors.New("mock error")
 }
 
 func makePhoneComponent(label string, phone string) keybase1.ContactComponent {
@@ -178,15 +191,21 @@ func TestLookupContacts(t *testing.T) {
 
 	provider := makeProvider(t)
 
+	actx := externals.MakeStaticAssertionContext(context.Background())
+
 	// None of the contact components resolved (empty mock provider). Return all
 	// 3 unresolved components to the caller.
 	res, err := ResolveContacts(libkb.NewMetaContextForTest(tc), provider, contactList, keybase1.RegionCode(""))
 	require.NoError(t, err)
 	require.Len(t, res, 3)
-	for _, r := range res {
+	for i, r := range res {
 		require.Equal(t, "Joe", r.DisplayName)
 		require.False(t, r.Resolved)
 		require.True(t, r.Uid.IsNil())
+		component := contactList[0].Components[i]
+		assertion, err := AssertionFromComponent(actx, component, "")
+		require.NoError(t, err)
+		require.Equal(t, assertion, r.Assertion)
 	}
 
 	// At least one of the components resolves the user, return just that one
@@ -219,6 +238,11 @@ func TestLookupContacts(t *testing.T) {
 		"joe (1)",
 		"ed (2)",
 	}, stringifyResults(res))
+	// Even if contact resolves to a Keybase user, assertion should still be an
+	// imptofu assertion (rather than username or username@keybase). This is
+	// required, so resolver is involved when starting a conversation.
+	require.Equal(t, "1111222@phone", res[0].Assertion)
+	require.Equal(t, "199123@phone", res[1].Assertion)
 
 	// Test with email
 	provider = makeProvider(t)
@@ -292,6 +316,11 @@ func TestLookupContactsMultipleUsers(t *testing.T) {
 		`"Alice" "+199123 (Work)"`,
 	}
 	require.Equal(t, expected, displayResults(res))
+
+	require.Equal(t, "[charlie+test@keyba.se]@email", res[0].Assertion)
+	require.Equal(t, "123456@phone", res[1].Assertion)
+	require.Equal(t, "1111222@phone", res[2].Assertion)
+	require.Equal(t, "199123@phone", res[3].Assertion)
 }
 
 func TestEmptyComponentLabels(t *testing.T) {
@@ -385,6 +414,111 @@ func TestFollowing(t *testing.T) {
 		`"charlie" "Charlie"`,         // followed but no full name, take contact name
 		`"doug" "doug+test@keyba.se"`, // not followed, no full name, no contact name, take component
 		`"alice" "CryptoAlice"`,       // followed and have full name, take full name
+	}
+	require.Equal(t, expected, displayResults(res))
+}
+
+func TestErrorsInResolution(t *testing.T) {
+	tc := libkb.SetupTest(t, "TestLookupContacts", 1)
+	defer tc.Cleanup()
+
+	contactList := []keybase1.Contact{
+		keybase1.Contact{
+			Name: "Alice",
+			Components: []keybase1.ContactComponent{
+				makePhoneComponent("home", "+1111222"),
+				makePhoneComponent("work", "444"),
+			},
+		},
+		keybase1.Contact{
+			Name: "Bob",
+			Components: []keybase1.ContactComponent{
+				makeEmailComponent("", "bob+test@keyba.se"),
+			},
+		},
+	}
+
+	provider := makeProvider(t)
+	provider.phoneNumbers["+1111222"] = mockLookupUser{UID: keybase1.UID("1111"), Username: "alice", Fullname: "CryptoAlice"}
+	provider.phoneNumberErrors["444"] = "Mock error for number 444"
+
+	res, err := ResolveContacts(libkb.NewMetaContextForTest(tc), provider, contactList, keybase1.RegionCode(""))
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+	require.True(t, res[0].Resolved)
+	require.False(t, res[1].Resolved)
+	expected := []string{
+		`"alice" "Alice"`,
+		`"Bob" "bob+test@keyba.se"`,
+	}
+	require.Equal(t, expected, displayResults(res))
+
+	delete(provider.phoneNumbers, "+1111222")
+
+	res, err = ResolveContacts(libkb.NewMetaContextForTest(tc), provider, contactList, keybase1.RegionCode(""))
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+	require.False(t, res[0].Resolved)
+	require.False(t, res[1].Resolved)
+	expected = []string{
+		`"Alice" "+1111222 (home)"`,
+		`"Bob" "bob+test@keyba.se"`,
+	}
+	require.Equal(t, expected, displayResults(res))
+}
+
+func TestDuplicateEntries(t *testing.T) {
+	tc := libkb.SetupTest(t, "TestLookupContacts", 1)
+	defer tc.Cleanup()
+
+	contactList := []keybase1.Contact{
+		// Contact with multiple components that will yield the same assertion.
+		keybase1.Contact{
+			Name: "Alice",
+			Components: []keybase1.ContactComponent{
+				makePhoneComponent("home", "+1111222"),
+				makePhoneComponent("car", "+1111222"),
+				makePhoneComponent("car", "+1111222"),
+			},
+		},
+		// "Duplicated" contacts with the same name and same component.
+		keybase1.Contact{
+			Name: "Alice",
+			Components: []keybase1.ContactComponent{
+				makePhoneComponent("home", "+1111222"),
+			},
+		},
+		// Two contacts with same component that's going to get resolved -
+		// resolution should appear only once in results.
+		keybase1.Contact{
+			Name: "Bob",
+			Components: []keybase1.ContactComponent{
+				makeEmailComponent("email", "bob+test@keyba.se"),
+			},
+		},
+		keybase1.Contact{
+			Name: "Robert B.",
+			Components: []keybase1.ContactComponent{
+				makeEmailComponent("E-Mail", "bob+test@keyba.se"),
+			},
+		},
+	}
+
+	provider := makeProvider(t)
+	provider.emails["bob+test@keyba.se"] = mockLookupUser{UID: keybase1.UID("2222"), Username: "bob", Fullname: "Bobby"}
+
+	// We expect to see one resolution for "bob+test@keyba.se" from "Bob"
+	// contact (comes first), and one unresolved entry for Alice for "+1111222"
+	// (one even though there are 3 components with the same phone number, and
+	// a duplicate "Alice" contact).
+	res, err := ResolveContacts(libkb.NewMetaContextForTest(tc), provider, contactList, keybase1.RegionCode(""))
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+	require.True(t, res[0].Resolved)
+	require.False(t, res[1].Resolved)
+	expected := []string{
+		`"bob" "Bob"`,
+		`"Alice" "+1111222 (home)"`,
 	}
 	require.Equal(t, expected, displayResults(res))
 }

@@ -23,6 +23,14 @@ export const makeOutOfDate = I.Record<Types._OutOfDate>({
   updating: false,
 })
 
+export const prepareAccountRows = <T extends {username: string; hasStoredSecret: boolean}>(
+  accountRows: I.List<T>,
+  myUsername: string
+): I.List<T> =>
+  accountRows
+    .filter(account => account.username !== myUsername)
+    .sortBy(account => [!account.hasStoredSecret, account.username])
+
 export const urlToUsername = (url: {
   protocol: string
   username: string
@@ -74,6 +82,10 @@ export const urlToUsername = (url: {
   const username = usernameMatch.toLowerCase()
   return username
 }
+export const makeConfiguredAccount = I.Record<Types._ConfiguredAccount>({
+  hasStoredSecret: false,
+  username: '',
+})
 
 export const makeState = I.Record<Types._State>({
   appFocused: true,
@@ -106,11 +118,12 @@ export const makeState = I.Record<Types._State>({
   outOfDate: undefined,
   pushLoaded: false,
   registered: false,
+  runtimeStats: null,
   startupConversation: ChatConstants.noConversationIDKey,
   startupDetailsLoaded: false,
   startupFollowUser: '',
   startupLink: '',
-  startupSharePath: undefined,
+  startupSharePath: '',
   startupTab: null,
   startupWasFromPush: false,
   uid: '',

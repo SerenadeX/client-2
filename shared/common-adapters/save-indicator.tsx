@@ -113,7 +113,7 @@ const defaultStyle = {
 }
 
 class SaveIndicator extends React.Component<Props, State> {
-  _timeoutID: number | null
+  _timeoutID?: NodeJS.Timeout
 
   constructor(props: Props) {
     super(props)
@@ -124,7 +124,7 @@ class SaveIndicator extends React.Component<Props, State> {
     if (this._timeoutID) {
       this.props.clearTimeout(this._timeoutID)
     }
-    this._timeoutID = null
+    this._timeoutID = undefined
 
     const now = new Date()
     const result = computeNextState(this.props, this.state, now)
@@ -133,7 +133,7 @@ class SaveIndicator extends React.Component<Props, State> {
     }
 
     if (typeof result === 'number') {
-      this._timeoutID = this.props.setTimeout(this._runStateMachine, result) || null
+      this._timeoutID = this.props.setTimeout(this._runStateMachine, result)
       return
     }
 
@@ -151,7 +151,7 @@ class SaveIndicator extends React.Component<Props, State> {
     this.setState(newPartialState)
   }
 
-  componentDidUpdate = (prevProps: Props, prevState: State) => {
+  componentDidUpdate = (_: Props, prevState: State) => {
     if (this.props.saving !== this.state.saving) {
       const debugLog = this.props.debugLog
       const newPartialState: Partial<State> = {

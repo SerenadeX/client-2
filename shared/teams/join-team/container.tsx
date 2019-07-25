@@ -5,7 +5,7 @@ import {upperFirst} from 'lodash-es'
 import {connect, compose, lifecycle, withStateHandlers, withHandlers} from '../../util/container'
 import {RouteProps} from '../../route-tree/render-route'
 
-type OwnProps = RouteProps<{}, {}>
+type OwnProps = RouteProps
 
 const mapStateToProps = state => ({
   errorText: upperFirst(state.teams.teamJoinError),
@@ -30,7 +30,7 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps,
-    (s, d, o) => ({...o, ...s, ...d})
+    (s, d, o: OwnProps) => ({...o, ...s, ...d})
   ),
   withStateHandlers({name: ''}, {onNameChange: () => (name: string) => ({name: name.toLowerCase()})}),
   withHandlers({

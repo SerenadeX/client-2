@@ -217,6 +217,10 @@ protocol config {
   void clearValue(string path);
   ConfigValue getValue(string path);
 
+  void guiSetValue(string path, ConfigValue value);
+  void guiClearValue(string path);
+  ConfigValue guiGetValue(string path);
+
   record OutOfDateInfo {
     string upgradeTo;
     string upgradeURI;
@@ -302,4 +306,7 @@ protocol config {
   void setProxyData(ProxyData proxyData);
 
   ProxyData getProxyData();
+
+  // Runtime Stats
+  void toggleRuntimeStats();
 }

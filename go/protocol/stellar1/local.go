@@ -557,14 +557,16 @@ func (o SendBannerLocal) DeepCopy() SendBannerLocal {
 }
 
 type SendPaymentResLocal struct {
-	KbTxID  KeybaseTransactionID `codec:"kbTxID" json:"kbTxID"`
-	Pending bool                 `codec:"pending" json:"pending"`
+	KbTxID     KeybaseTransactionID `codec:"kbTxID" json:"kbTxID"`
+	Pending    bool                 `codec:"pending" json:"pending"`
+	JumpToChat string               `codec:"jumpToChat" json:"jumpToChat"`
 }
 
 func (o SendPaymentResLocal) DeepCopy() SendPaymentResLocal {
 	return SendPaymentResLocal{
-		KbTxID:  o.KbTxID.DeepCopy(),
-		Pending: o.Pending,
+		KbTxID:     o.KbTxID.DeepCopy(),
+		Pending:    o.Pending,
+		JumpToChat: o.JumpToChat,
 	}
 }
 
@@ -1220,6 +1222,20 @@ func (o SignXdrResult) DeepCopy() SignXdrResult {
 	}
 }
 
+type StaticConfig struct {
+	PaymentNoteMaxLength int `codec:"paymentNoteMaxLength" json:"paymentNoteMaxLength"`
+	RequestNoteMaxLength int `codec:"requestNoteMaxLength" json:"requestNoteMaxLength"`
+	PublicMemoMaxLength  int `codec:"publicMemoMaxLength" json:"publicMemoMaxLength"`
+}
+
+func (o StaticConfig) DeepCopy() StaticConfig {
+	return StaticConfig{
+		PaymentNoteMaxLength: o.PaymentNoteMaxLength,
+		RequestNoteMaxLength: o.RequestNoteMaxLength,
+		PublicMemoMaxLength:  o.PublicMemoMaxLength,
+	}
+}
+
 type GetWalletAccountsLocalArg struct {
 	SessionID int `codec:"sessionID" json:"sessionID"`
 }
@@ -1651,6 +1667,9 @@ type SignTransactionXdrLocalArg struct {
 	Submit      bool       `codec:"submit" json:"submit"`
 }
 
+type GetStaticConfigLocalArg struct {
+}
+
 type LocalInterface interface {
 	GetWalletAccountsLocal(context.Context, int) ([]WalletAccountLocal, error)
 	GetWalletAccountLocal(context.Context, GetWalletAccountLocalArg) (WalletAccountLocal, error)
@@ -1664,12 +1683,12 @@ type LocalInterface interface {
 	ValidateAccountIDLocal(context.Context, ValidateAccountIDLocalArg) error
 	ValidateSecretKeyLocal(context.Context, ValidateSecretKeyLocalArg) error
 	ValidateAccountNameLocal(context.Context, ValidateAccountNameLocalArg) error
-	ChangeWalletAccountNameLocal(context.Context, ChangeWalletAccountNameLocalArg) error
-	SetWalletAccountAsDefaultLocal(context.Context, SetWalletAccountAsDefaultLocalArg) error
+	ChangeWalletAccountNameLocal(context.Context, ChangeWalletAccountNameLocalArg) (WalletAccountLocal, error)
+	SetWalletAccountAsDefaultLocal(context.Context, SetWalletAccountAsDefaultLocalArg) ([]WalletAccountLocal, error)
 	DeleteWalletAccountLocal(context.Context, DeleteWalletAccountLocalArg) error
 	LinkNewWalletAccountLocal(context.Context, LinkNewWalletAccountLocalArg) (AccountID, error)
 	CreateWalletAccountLocal(context.Context, CreateWalletAccountLocalArg) (AccountID, error)
-	ChangeDisplayCurrencyLocal(context.Context, ChangeDisplayCurrencyLocalArg) error
+	ChangeDisplayCurrencyLocal(context.Context, ChangeDisplayCurrencyLocalArg) (CurrencyLocal, error)
 	GetDisplayCurrencyLocal(context.Context, GetDisplayCurrencyLocalArg) (CurrencyLocal, error)
 	HasAcceptedDisclaimerLocal(context.Context, int) (bool, error)
 	AcceptDisclaimerLocal(context.Context, int) error
@@ -1729,6 +1748,7 @@ type LocalInterface interface {
 	ApprovePathURILocal(context.Context, ApprovePathURILocalArg) (TransactionID, error)
 	GetPartnerUrlsLocal(context.Context, int) ([]PartnerUrl, error)
 	SignTransactionXdrLocal(context.Context, SignTransactionXdrLocalArg) (SignXdrResult, error)
+	GetStaticConfigLocal(context.Context) (StaticConfig, error)
 }
 
 func LocalProtocol(i LocalInterface) rpc.Protocol {
@@ -1926,7 +1946,7 @@ func LocalProtocol(i LocalInterface) rpc.Protocol {
 						err = rpc.NewTypeError((*[1]ChangeWalletAccountNameLocalArg)(nil), args)
 						return
 					}
-					err = i.ChangeWalletAccountNameLocal(ctx, typedArgs[0])
+					ret, err = i.ChangeWalletAccountNameLocal(ctx, typedArgs[0])
 					return
 				},
 			},
@@ -1941,7 +1961,7 @@ func LocalProtocol(i LocalInterface) rpc.Protocol {
 						err = rpc.NewTypeError((*[1]SetWalletAccountAsDefaultLocalArg)(nil), args)
 						return
 					}
-					err = i.SetWalletAccountAsDefaultLocal(ctx, typedArgs[0])
+					ret, err = i.SetWalletAccountAsDefaultLocal(ctx, typedArgs[0])
 					return
 				},
 			},
@@ -2001,7 +2021,7 @@ func LocalProtocol(i LocalInterface) rpc.Protocol {
 						err = rpc.NewTypeError((*[1]ChangeDisplayCurrencyLocalArg)(nil), args)
 						return
 					}
-					err = i.ChangeDisplayCurrencyLocal(ctx, typedArgs[0])
+					ret, err = i.ChangeDisplayCurrencyLocal(ctx, typedArgs[0])
 					return
 				},
 			},
@@ -2870,6 +2890,16 @@ func LocalProtocol(i LocalInterface) rpc.Protocol {
 					return
 				},
 			},
+			"getStaticConfigLocal": {
+				MakeArg: func() interface{} {
+					var ret [1]GetStaticConfigLocalArg
+					return &ret
+				},
+				Handler: func(ctx context.Context, args interface{}) (ret interface{}, err error) {
+					ret, err = i.GetStaticConfigLocal(ctx)
+					return
+				},
+			},
 		},
 	}
 }
@@ -2940,13 +2970,13 @@ func (c LocalClient) ValidateAccountNameLocal(ctx context.Context, __arg Validat
 	return
 }
 
-func (c LocalClient) ChangeWalletAccountNameLocal(ctx context.Context, __arg ChangeWalletAccountNameLocalArg) (err error) {
-	err = c.Cli.Call(ctx, "stellar.1.local.changeWalletAccountNameLocal", []interface{}{__arg}, nil)
+func (c LocalClient) ChangeWalletAccountNameLocal(ctx context.Context, __arg ChangeWalletAccountNameLocalArg) (res WalletAccountLocal, err error) {
+	err = c.Cli.Call(ctx, "stellar.1.local.changeWalletAccountNameLocal", []interface{}{__arg}, &res)
 	return
 }
 
-func (c LocalClient) SetWalletAccountAsDefaultLocal(ctx context.Context, __arg SetWalletAccountAsDefaultLocalArg) (err error) {
-	err = c.Cli.Call(ctx, "stellar.1.local.setWalletAccountAsDefaultLocal", []interface{}{__arg}, nil)
+func (c LocalClient) SetWalletAccountAsDefaultLocal(ctx context.Context, __arg SetWalletAccountAsDefaultLocalArg) (res []WalletAccountLocal, err error) {
+	err = c.Cli.Call(ctx, "stellar.1.local.setWalletAccountAsDefaultLocal", []interface{}{__arg}, &res)
 	return
 }
 
@@ -2965,8 +2995,8 @@ func (c LocalClient) CreateWalletAccountLocal(ctx context.Context, __arg CreateW
 	return
 }
 
-func (c LocalClient) ChangeDisplayCurrencyLocal(ctx context.Context, __arg ChangeDisplayCurrencyLocalArg) (err error) {
-	err = c.Cli.Call(ctx, "stellar.1.local.changeDisplayCurrencyLocal", []interface{}{__arg}, nil)
+func (c LocalClient) ChangeDisplayCurrencyLocal(ctx context.Context, __arg ChangeDisplayCurrencyLocalArg) (res CurrencyLocal, err error) {
+	err = c.Cli.Call(ctx, "stellar.1.local.changeDisplayCurrencyLocal", []interface{}{__arg}, &res)
 	return
 }
 
@@ -3277,5 +3307,10 @@ func (c LocalClient) GetPartnerUrlsLocal(ctx context.Context, sessionID int) (re
 
 func (c LocalClient) SignTransactionXdrLocal(ctx context.Context, __arg SignTransactionXdrLocalArg) (res SignXdrResult, err error) {
 	err = c.Cli.Call(ctx, "stellar.1.local.signTransactionXdrLocal", []interface{}{__arg}, &res)
+	return
+}
+
+func (c LocalClient) GetStaticConfigLocal(ctx context.Context) (res StaticConfig, err error) {
+	err = c.Cli.Call(ctx, "stellar.1.local.getStaticConfigLocal", []interface{}{GetStaticConfigLocalArg{}}, &res)
 	return
 }

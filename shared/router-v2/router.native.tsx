@@ -17,6 +17,8 @@ import * as Shim from './shim.native'
 import {debounce} from 'lodash-es'
 import logger from '../logger'
 import OutOfDate from '../app/out-of-date'
+import RuntimeStats from '../app/runtime-stats/container'
+import {Props} from './router'
 
 // turn on screens
 useScreens()
@@ -70,16 +72,18 @@ const TabBarIcon = ({badgeNumber, focused, routeName}) => (
 )
 
 const settingsTabChildren = [Tabs.gitTab, Tabs.devicesTab, Tabs.walletsTab]
-const getBadgeNumber = (navBadges, routeName) =>
-  routeName === Tabs.settingsTab
-    ? settingsTabChildren.reduce((res, tab) => res + (navBadges.get(tab) || 0), 0)
-    : navBadges.get(routeName)
 
 type OwnProps = {focused: boolean; routeName: Tabs.Tab}
 const ConnectedTabBarIcon = connect(
-  (state: any, {routeName}: OwnProps) => ({
-    badgeNumber: getBadgeNumber(state.notifications.navBadges, routeName),
-  }),
+  (state, {routeName}: OwnProps) => {
+    const onSettings = routeName === Tabs.settingsTab
+    const badgeNumber = (onSettings ? settingsTabChildren : [routeName]).reduce(
+      (res, tab) => res + (state.notifications.navBadges.get(tab) || 0),
+      // notifications gets badged on native if there's no push, special case
+      onSettings && !state.push.hasPermissions ? 1 : 0
+    )
+    return {badgeNumber}
+  },
   () => ({}),
   (s, _, o: OwnProps) => ({
     badgeNumber: s.badgeNumber,
@@ -186,8 +190,8 @@ const RootStackNavigator = createSwitchNavigator(
 
 const AppContainer = createAppContainer(RootStackNavigator)
 
-class RNApp extends React.PureComponent<any, any> {
-  _nav = null
+class RNApp extends React.PureComponent<Props> {
+  _nav: any = null
   // TODO remove this eventually, just so we can handle the old style actions
   dispatchOldAction = (old: any) => {
     const nav = this._nav
@@ -251,12 +255,10 @@ class RNApp extends React.PureComponent<any, any> {
     }
   }
 
-  getNavState = () =>
-    // Auto generated from flowToTs. Please clean me!
-    (this._nav === null || this._nav === undefined ? undefined : this._nav.state) === null ||
-    (this._nav === null || this._nav === undefined ? undefined : this._nav.state) === undefined
-      ? undefined
-      : (this._nav === null || this._nav === undefined ? undefined : this._nav.state).nav
+  getNavState = () => {
+    const n = this._nav
+    return (n && n.state && n.state.nav) || null
+  }
 
   render() {
     return (
@@ -264,6 +266,7 @@ class RNApp extends React.PureComponent<any, any> {
         <AppContainer ref={nav => (this._nav = nav)} onNavigationStateChange={this._persistRoute} />
         <GlobalError />
         <OutOfDate />
+        <RuntimeStats />
       </>
     )
   }

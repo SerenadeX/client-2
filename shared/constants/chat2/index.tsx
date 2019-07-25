@@ -10,6 +10,7 @@ import {isMobile} from '../platform'
 import {
   noConversationIDKey,
   pendingWaitingConversationIDKey,
+  pendingErrorConversationIDKey,
   conversationIDKeyToString,
   isValidConversationIDKey,
 } from '../types/chat2/common'
@@ -27,9 +28,11 @@ export const makeState = I.Record<Types._State>({
   attachmentFullscreenSelection: null,
   attachmentViewMap: I.Map(),
   badgeMap: I.Map(),
+  botCommandsUpdateStatusMap: I.Map(),
   commandMarkdownMap: I.Map(),
   commandStatusMap: I.Map(),
   containsLatestMessageMap: I.Map(),
+  createConversationError: null,
   editingMap: I.Map(),
   explodingModeLocks: I.Map(),
   explodingModes: I.Map(),
@@ -51,6 +54,7 @@ export const makeState = I.Record<Types._State>({
   paymentConfirmInfo: null,
   paymentStatusMap: I.Map(),
   pendingOutboxToOrdinal: I.Map(),
+  prependTextMap: I.Map(),
   quote: null,
   replyToMap: I.Map(),
   selectedConversation: noConversationIDKey,
@@ -157,7 +161,7 @@ export const getThreadSearchInfo = (state: TypedState, conversationIDKey: Types.
   state.chat2.threadSearchInfoMap.get(conversationIDKey, makeThreadSearchInfo())
 
 export const getMessageOrdinals = (state: TypedState, id: Types.ConversationIDKey) =>
-  state.chat2.messageOrdinals.get(id, I.OrderedSet())
+  state.chat2.messageOrdinals.get(id, I.OrderedSet<Types.Ordinal>())
 export const getMessageCenterOrdinal = (state: TypedState, id: Types.ConversationIDKey) =>
   state.chat2.messageCenterOrdinals.get(id)
 export const getMessage = (
@@ -390,6 +394,7 @@ export const zoomImage = (width: number, height: number, maxThumbSize: number) =
 
 export {
   getAllChannels,
+  getBotCommands,
   getChannelForTeam,
   getChannelSuggestions,
   getCommands,
@@ -451,5 +456,6 @@ export {
   noConversationIDKey,
   numMessagesOnInitialLoad,
   numMessagesOnScrollback,
+  pendingErrorConversationIDKey,
   pendingWaitingConversationIDKey,
 }

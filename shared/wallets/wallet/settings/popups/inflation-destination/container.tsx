@@ -6,12 +6,7 @@ import * as RouteTreeGen from '../../../../../actions/route-tree-gen'
 import logger from '../../../../../logger'
 import InflationDestination from '.'
 
-type OwnProps = Container.RouteProps<
-  {
-    accountID: Types.AccountID
-  },
-  {}
->
+type OwnProps = Container.RouteProps< { accountID: Types.AccountID } >
 
 const mapStateToProps = (state, ownProps) => {
   const accountID = Container.getRouteProps(ownProps, 'accountID')
@@ -43,7 +38,7 @@ const mapDispatchToProps = dispatch => ({
   },
 })
 
-const mergeProps = (stateProps, dispatchProps) => ({
+const mergeProps = (stateProps, dispatchProps, _: OwnProps) => ({
   error: stateProps.error,
   inflationDestination: stateProps.inflationDestination,
   onClose: () => dispatchProps._onClose(),

@@ -5,18 +5,13 @@ import {isMobile} from '../../constants/platform'
 import {getRouteProps, namedConnect, RouteProps} from '../../util/container'
 import BarePreview from './bare-preview'
 
-type OwnProps = RouteProps<
-  {
-    path: Types.Path
-  },
-  {}
->
+type OwnProps = RouteProps< { path: Types.Path } >
 
 const mapDispatchToProps = (dispatch, {navigateUp}: OwnProps) => ({
   onBack: () => dispatch(navigateUp()),
 })
 
-const mergeProps = (stateProps, {onBack}, ownProps: OwnProps) => ({
+const mergeProps = (_, {onBack}, ownProps: OwnProps) => ({
   onBack,
   path: getRouteProps(ownProps, 'path') || Constants.defaultPath,
   routePath: I.List(), // TODO fix ownProps.routePath,

@@ -883,6 +883,19 @@ type GetValueArg struct {
 	Path string `codec:"path" json:"path"`
 }
 
+type GuiSetValueArg struct {
+	Path  string      `codec:"path" json:"path"`
+	Value ConfigValue `codec:"value" json:"value"`
+}
+
+type GuiClearValueArg struct {
+	Path string `codec:"path" json:"path"`
+}
+
+type GuiGetValueArg struct {
+	Path string `codec:"path" json:"path"`
+}
+
 type CheckAPIServerOutOfDateWarningArg struct {
 }
 
@@ -926,6 +939,9 @@ type SetProxyDataArg struct {
 type GetProxyDataArg struct {
 }
 
+type ToggleRuntimeStatsArg struct {
+}
+
 type ConfigInterface interface {
 	GetCurrentStatus(context.Context, int) (CurrentStatus, error)
 	GetClientStatus(context.Context, int) ([]ClientStatus, error)
@@ -942,6 +958,9 @@ type ConfigInterface interface {
 	SetValue(context.Context, SetValueArg) error
 	ClearValue(context.Context, string) error
 	GetValue(context.Context, string) (ConfigValue, error)
+	GuiSetValue(context.Context, GuiSetValueArg) error
+	GuiClearValue(context.Context, string) error
+	GuiGetValue(context.Context, string) (ConfigValue, error)
 	// Check whether the API server has told us we're out of date.
 	CheckAPIServerOutOfDateWarning(context.Context) (OutOfDateInfo, error)
 	GetUpdateInfo(context.Context) (UpdateInfo, error)
@@ -957,6 +976,7 @@ type ConfigInterface interface {
 	GetUpdateInfo2(context.Context, GetUpdateInfo2Arg) (UpdateInfo2, error)
 	SetProxyData(context.Context, ProxyData) error
 	GetProxyData(context.Context) (ProxyData, error)
+	ToggleRuntimeStats(context.Context) error
 }
 
 func ConfigProtocol(i ConfigInterface) rpc.Protocol {
@@ -1143,6 +1163,51 @@ func ConfigProtocol(i ConfigInterface) rpc.Protocol {
 					return
 				},
 			},
+			"guiSetValue": {
+				MakeArg: func() interface{} {
+					var ret [1]GuiSetValueArg
+					return &ret
+				},
+				Handler: func(ctx context.Context, args interface{}) (ret interface{}, err error) {
+					typedArgs, ok := args.(*[1]GuiSetValueArg)
+					if !ok {
+						err = rpc.NewTypeError((*[1]GuiSetValueArg)(nil), args)
+						return
+					}
+					err = i.GuiSetValue(ctx, typedArgs[0])
+					return
+				},
+			},
+			"guiClearValue": {
+				MakeArg: func() interface{} {
+					var ret [1]GuiClearValueArg
+					return &ret
+				},
+				Handler: func(ctx context.Context, args interface{}) (ret interface{}, err error) {
+					typedArgs, ok := args.(*[1]GuiClearValueArg)
+					if !ok {
+						err = rpc.NewTypeError((*[1]GuiClearValueArg)(nil), args)
+						return
+					}
+					err = i.GuiClearValue(ctx, typedArgs[0].Path)
+					return
+				},
+			},
+			"guiGetValue": {
+				MakeArg: func() interface{} {
+					var ret [1]GuiGetValueArg
+					return &ret
+				},
+				Handler: func(ctx context.Context, args interface{}) (ret interface{}, err error) {
+					typedArgs, ok := args.(*[1]GuiGetValueArg)
+					if !ok {
+						err = rpc.NewTypeError((*[1]GuiGetValueArg)(nil), args)
+						return
+					}
+					ret, err = i.GuiGetValue(ctx, typedArgs[0].Path)
+					return
+				},
+			},
 			"checkAPIServerOutOfDateWarning": {
 				MakeArg: func() interface{} {
 					var ret [1]CheckAPIServerOutOfDateWarningArg
@@ -1288,6 +1353,16 @@ func ConfigProtocol(i ConfigInterface) rpc.Protocol {
 					return
 				},
 			},
+			"toggleRuntimeStats": {
+				MakeArg: func() interface{} {
+					var ret [1]ToggleRuntimeStatsArg
+					return &ret
+				},
+				Handler: func(ctx context.Context, args interface{}) (ret interface{}, err error) {
+					err = i.ToggleRuntimeStats(ctx)
+					return
+				},
+			},
 		},
 	}
 }
@@ -1367,6 +1442,23 @@ func (c ConfigClient) GetValue(ctx context.Context, path string) (res ConfigValu
 	return
 }
 
+func (c ConfigClient) GuiSetValue(ctx context.Context, __arg GuiSetValueArg) (err error) {
+	err = c.Cli.Call(ctx, "keybase.1.config.guiSetValue", []interface{}{__arg}, nil)
+	return
+}
+
+func (c ConfigClient) GuiClearValue(ctx context.Context, path string) (err error) {
+	__arg := GuiClearValueArg{Path: path}
+	err = c.Cli.Call(ctx, "keybase.1.config.guiClearValue", []interface{}{__arg}, nil)
+	return
+}
+
+func (c ConfigClient) GuiGetValue(ctx context.Context, path string) (res ConfigValue, err error) {
+	__arg := GuiGetValueArg{Path: path}
+	err = c.Cli.Call(ctx, "keybase.1.config.guiGetValue", []interface{}{__arg}, &res)
+	return
+}
+
 // Check whether the API server has told us we're out of date.
 func (c ConfigClient) CheckAPIServerOutOfDateWarning(ctx context.Context) (res OutOfDateInfo, err error) {
 	err = c.Cli.Call(ctx, "keybase.1.config.checkAPIServerOutOfDateWarning", []interface{}{CheckAPIServerOutOfDateWarningArg{}}, &res)
@@ -1427,5 +1519,10 @@ func (c ConfigClient) SetProxyData(ctx context.Context, proxyData ProxyData) (er
 
 func (c ConfigClient) GetProxyData(ctx context.Context) (res ProxyData, err error) {
 	err = c.Cli.Call(ctx, "keybase.1.config.getProxyData", []interface{}{GetProxyDataArg{}}, &res)
+	return
+}
+
+func (c ConfigClient) ToggleRuntimeStats(ctx context.Context) (err error) {
+	err = c.Cli.Call(ctx, "keybase.1.config.toggleRuntimeStats", []interface{}{ToggleRuntimeStatsArg{}}, nil)
 	return
 }

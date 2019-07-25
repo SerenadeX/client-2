@@ -4,7 +4,7 @@ import ForgotUsername from '.'
 import {connect} from '../../util/container'
 import {RouteProps} from '../../route-tree/render-route'
 
-type OwnProps = RouteProps<{}, {}>
+type OwnProps = RouteProps
 
 const mapStateToProps = state => ({
   forgotUsernameResult: state.provision.forgotUsernameResult,
@@ -18,5 +18,5 @@ const dispatchToProps = dispatch => ({
 export default connect(
   mapStateToProps,
   dispatchToProps,
-  (s, d, _) => ({...s, ...d})
+    (s, d, _: OwnProps) => ({...s, ...d})
 )(ForgotUsername)

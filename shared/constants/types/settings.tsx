@@ -80,7 +80,13 @@ export type _EmailState = {
 }
 export type EmailState = I.RecordOf<_EmailState>
 
-export type _PhoneRow = RPCTypes.UserPhoneNumber
+export type _PhoneRow = {
+  displayNumber: string
+  e164: string
+  searchable: boolean
+  superseded: boolean
+  verified: boolean
+}
 export type PhoneRow = I.RecordOf<_PhoneRow>
 
 export type _FeedbackState = {
@@ -103,7 +109,6 @@ export type ChatState = I.RecordOf<_ChatState>
 export type _PhoneNumbersState = {
   error: string
   pendingVerification: string
-  pendingVerificationAllowSearch: boolean | null // stash this so we can use it when resending the verification code
   phones: I.Map<string, PhoneRow> | null
   verificationState: 'success' | 'error' | null
 }
@@ -111,8 +116,11 @@ export type PhoneNumbersState = I.RecordOf<_PhoneNumbersState>
 
 export type _ContactsState = {
   importEnabled: boolean | null
+  importPromptDismissed: boolean
+  importedCount: number | null
   // OS permissions. 'undetermined' -> we can show the prompt; 'unknown' -> we haven't checked
   permissionStatus: 'granted' | 'never_ask_again' | 'undetermined' | 'unknown'
+  userCountryCode: string | null
 }
 export type ContactsState = I.RecordOf<_ContactsState>
 
@@ -152,6 +160,7 @@ type ScreenprotectorTab = 'settingsTabs.screenprotector'
 type LogOutTab = 'settingsTabs.logOutTab'
 type UpdatePaymentTab = 'settingsTabs.updatePaymentTab'
 type WalletsTab = 'settingsTabs.walletsTab'
+type ContactsTab = 'settingsTabs.contactsTab'
 
 export type Tab =
   | AccountTab
@@ -171,5 +180,6 @@ export type Tab =
   | PasswordTab
   | WalletsTab
   | ChatTab
+  | ContactsTab
 
 export type PlanLevel = string

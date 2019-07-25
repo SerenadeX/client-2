@@ -12,11 +12,12 @@ export type _State = {
   emailVisible: boolean
   inviteCode: string
   inviteCodeError: string
+  justSignedUpEmail: string
   name: string
   nameError: string
   password: HiddenString
   passwordError: HiddenString
-  signupError: RPCError
+  signupError: RPCError | null
   username: string
   usernameError: string
   usernameTaken: string

@@ -1,11 +1,9 @@
 import * as React from 'react'
 import WaitingButton from '../waiting-button'
-import {Box, Box2} from '../box'
-import HeaderOrPopup from '../header-or-popup'
+import {Box2} from '../box'
 import ButtonBar from '../button-bar'
-import Banner from '../banner'
+import {Banner, BannerParagraph} from '../banner'
 import Icon from '../icon'
-import ScrollView from '../scroll-view'
 import Text from '../text'
 import Modal from '../modal'
 import * as Styles from '../../styles'
@@ -19,8 +17,9 @@ export type Props = {
   error?: string
   header?: React.ReactNode
   icon?: IconType
-  onCancel: () => void | null
-  onConfirm: () => void | null
+  iconColor?: Styles.Color
+  onCancel?: () => void
+  onConfirm?: () => void
   prompt: string
   waitingKey?: string
 }
@@ -40,7 +39,15 @@ class ConfirmModal extends React.PureComponent<Props> {
               }
             : undefined
         }
-        banners={this.props.error ? [<Banner key="error" color="red" text={this.props.error} />] : []}
+        banners={
+          this.props.error
+            ? [
+                <Banner key="error" color="red">
+                  <BannerParagraph bannerColor="red" content={this.props.error} />
+                </Banner>,
+              ]
+            : []
+        }
         footer={{
           content: (
             <ButtonBar direction="row" fullWidth={true} style={styles.buttonBar}>
@@ -52,7 +59,7 @@ class ConfirmModal extends React.PureComponent<Props> {
                   label="Cancel"
                   onClick={this.props.onCancel}
                   style={styles.button}
-                  waitingKey={this.props.waitingKey}
+                  waitingKey={this.props.waitingKey || null}
                 />
               )}
               <WaitingButton
@@ -62,13 +69,13 @@ class ConfirmModal extends React.PureComponent<Props> {
                 label={this.props.confirmText || 'Confirm'}
                 onClick={this.props.onConfirm}
                 style={styles.button}
-                waitingKey={this.props.waitingKey}
+                waitingKey={this.props.waitingKey || null}
               />
             </ButtonBar>
           ),
           hideBorder: true,
         }}
-        onClose={this.props.onCancel}
+        onClose={this.props.onCancel || undefined}
         mode="Wide"
       >
         <Box2
@@ -82,7 +89,7 @@ class ConfirmModal extends React.PureComponent<Props> {
           {this.props.icon && (
             <Icon
               boxStyle={styles.icon}
-              color={Styles.globalColors.black_50}
+              color={this.props.iconColor ? this.props.iconColor : Styles.globalColors.black_50}
               fontSize={Styles.isMobile ? 64 : 48}
               style={styles.icon}
               type={this.props.icon}

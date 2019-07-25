@@ -6,14 +6,7 @@ import {HeaderOrPopup} from '../../common-adapters'
 import {connect, compose, lifecycle, withHandlers, withStateHandlers, RouteProps} from '../../util/container'
 import SelectChannel from '.'
 
-type OwnProps = RouteProps<
-  {
-    teamname: string
-    selected: boolean
-    repoID: string
-  },
-  {}
->
+type OwnProps = RouteProps<{teamname: string; selected: boolean; repoID: string}>
 
 export type SelectChannelProps = {
   teamname: string
@@ -51,7 +44,7 @@ const mapDispatchToProps = (dispatch, {navigateUp, routeProps}) => {
   }
 }
 
-const mergeProps = (stateProps, dispatchProps, ownProps) => {
+const mergeProps = (stateProps, dispatchProps, _: OwnProps) => {
   const channelNames = stateProps._channelInfos
     .map(info => info.channelname)
     .valueSeq()
@@ -63,6 +56,7 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
   }
 }
 
+// TODO Fix this. This is typed as any
 export default compose(
   connect(
     mapStateToProps,

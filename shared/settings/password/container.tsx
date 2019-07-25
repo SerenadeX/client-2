@@ -1,10 +1,9 @@
 import * as SettingsGen from '../../actions/settings-gen'
-import * as Kb from '../../common-adapters'
 import UpdatePassword from '.'
 import {compose, lifecycle, connect, RouteProps} from '../../util/container'
 import HiddenString from '../../util/hidden-string'
 
-type OwnProps = RouteProps<{}, {}>
+type OwnProps = RouteProps
 
 const mapStateToProps = state => ({
   error: state.settings.password.error,
@@ -12,10 +11,10 @@ const mapStateToProps = state => ({
   hasRandomPW: !!state.settings.password.randomPW,
   newPasswordConfirmError: state.settings.password.newPasswordConfirmError
     ? state.settings.password.newPasswordConfirmError.stringValue()
-    : null,
+    : undefined,
   newPasswordError: state.settings.password.newPasswordError
     ? state.settings.password.newPasswordError.stringValue()
-    : null,
+    : undefined,
   saveLabel: state.settings.password.randomPW ? 'Create password' : 'Save',
   waitingForResponse: state.settings.waitingForResponse,
 })
@@ -35,7 +34,7 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps,
-    (s, d, o) => ({...o, ...s, ...d})
+      (s, d, o: OwnProps) => ({...o, ...s, ...d})
   ),
   lifecycle({
     componentDidMount() {
@@ -43,4 +42,4 @@ export default compose(
       this.props.onUpdatePGPSettings()
     },
   })
-)(Kb.HeaderOrPopup(UpdatePassword))
+)(UpdatePassword)

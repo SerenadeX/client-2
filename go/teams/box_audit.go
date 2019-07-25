@@ -24,9 +24,14 @@ func ShouldRunBoxAudit(mctx libkb.MetaContext) bool {
 	}
 
 	if mctx.G().IsMobileAppType() {
-		state, stateMtime := mctx.G().MobileAppState.StateAndMtime()
-		mctx.Debug("ShouldRunBoxAudit: mobileAppState=%+v, stateMtime=%+v", state, stateMtime)
-		if stateMtime == nil || state != keybase1.MobileAppState_FOREGROUND || time.Now().Sub(*stateMtime) < 3*time.Minute {
+		netState := mctx.G().MobileNetState.State()
+		if netState.IsLimited() {
+			mctx.Debug("ShouldRunBoxAudit: skipping box audit, network state: %v", netState)
+			return false
+		}
+		appState, stateMtime := mctx.G().MobileAppState.StateAndMtime()
+		mctx.Debug("ShouldRunBoxAudit: mobileAppState=%+v, stateMtime=%+v", appState, stateMtime)
+		if stateMtime == nil || appState != keybase1.MobileAppState_FOREGROUND || time.Now().Sub(*stateMtime) < 3*time.Minute {
 			mctx.Debug("ShouldRunBoxAudit: mobile and backgrounded")
 			return false
 		}
@@ -100,7 +105,7 @@ type BoxAuditor struct {
 	Version boxAuditVersion
 
 	// Singleflight lock on team ID.
-	locktab libkb.LockTable
+	locktab *libkb.LockTable
 
 	// jailMutex and queueMutex are not per-team locks, since they are
 	// collections of multiple team IDs.  Two audits of two teams can happen at
@@ -152,7 +157,10 @@ func NewBoxAuditor(g *libkb.GlobalContext) *BoxAuditor {
 }
 
 func newBoxAuditorWithVersion(g *libkb.GlobalContext, version boxAuditVersion) *BoxAuditor {
-	a := &BoxAuditor{Version: version}
+	a := &BoxAuditor{
+		Version: version,
+		locktab: libkb.NewLockTable(),
+	}
 	a.resetJailLRU()
 	return a
 }

@@ -5,15 +5,9 @@ import ReallyDelete from '.'
 import * as Types from '../../../../constants/types/fs'
 import * as Constants from '../../../../constants/fs'
 
-type OwnProps = Container.RouteProps<
-  {
-    path: Types.Path
-    mode: 'row' | 'screen'
-  },
-  {}
->
+type OwnProps = Container.RouteProps<{path: Types.Path; mode: 'row' | 'screen'}>
 
-const mapStateToProps = (state, ownProps) => ({
+const mapStateToProps = () => ({
   title: 'Confirmation',
 })
 

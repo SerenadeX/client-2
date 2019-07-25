@@ -12,6 +12,10 @@
     "acceptDisclaimer": {
       "_description": "Accept the Stellar account disclaimer"
     },
+    "acceptSEP7Path": {
+      "_description": "Accept the prepared SEP7 path payment",
+      "inputURI": "string"
+    },
     "acceptSEP7Pay": {
       "_description": "Accept the prepared SEP7 payment",
       "amount": "string",
@@ -185,9 +189,10 @@
     },
     "changedAccountName": {
       "_description": "A response from the service after an account's name is changed",
-      "accountID": "Types.AccountID",
+      "account": "Types.Account",
       "canError": {
         "name": "string",
+        "account": "Types.Account",
         "error": "string"
       }
     },
@@ -197,7 +202,7 @@
     },
     "didSetAccountAsDefault": {
       "_description": "A response from the service after an account is set as the default",
-      "accountID": "Types.AccountID"
+      "accounts": "Array<Types.Account>"
     },
     "deleteAccount": {
       "_description": "Delete an account",
@@ -239,6 +244,7 @@
     "paymentsReceived": {
       "_description": "Update our store of payments data",
       "accountID": "Types.AccountID",
+      "allowClearOldestUnread": "boolean",
       "paymentCursor": "StellarRPCTypes.PageCursor | null",
       "oldestUnread": "Types.PaymentID",
       "payments": "Array<Types.PaymentResult>",
@@ -298,7 +304,8 @@
     "sentPayment": {
       "_description": "Successfully sent a payment",
       "kbTxID": "HiddenString",
-      "lastSentXLM": "boolean"
+      "lastSentXLM": "boolean",
+      "jumpToChat": "string"
     },
     "sentPaymentError": {
       "_description": "Failed to send a payment",
@@ -348,8 +355,11 @@
     "setBuildingAdvancedSenderAccountID": {"senderAccountID": "Types.AccountID"},
     "setBuildingAdvancedSenderAsset": {"senderAsset": "Types.AssetDescriptionOrNative"},
     "setBuildingAdvancedSecretNote": {"secretNote": "HiddenString"},
-    "calculateBuildingAdvanced": {},
-    "setBuiltPaymentAdvanced": {"builtPaymentAdvanced": "Types.BuiltPaymentAdvanced"},
+    "calculateBuildingAdvanced": {"forSEP7": "boolean"},
+    "setBuiltPaymentAdvanced": {
+      "builtPaymentAdvanced": "Types.BuiltPaymentAdvanced",
+      "forSEP7": "boolean"
+    },
     "sendPaymentAdvanced": {"_description": "tell service to send this path payment"},
     "setLastSentXLM": {
       "_description": "Set whether last currency used to send was XLM",
@@ -472,6 +482,11 @@
       "accountID": "Types.AccountID",
       "assetID": "Types.AssetID"
     },
+    "changedTrustline": {
+      "canError": {
+        "error": "string"
+      }
+    },
     "setTrustlineAcceptedAssets": {
       "accountID": "Types.AccountID",
       "assets": "Array<Types.AssetDescription>",
@@ -496,6 +511,10 @@
     "setTrustlineExpanded": {
       "expanded": "boolean",
       "assetID": "Types.AssetID"
+    },
+    "staticConfigLoaded": {
+      "_description": "Static configuration info was loaded from the service.",
+      "staticConfig": "Types.StaticConfig"
     }
   }
 }

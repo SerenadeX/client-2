@@ -11,10 +11,11 @@ export type Props = {
   addedEmail: string | null
   contactKeys: I.List<string>
   hasPassword: boolean
+  supersededPhoneNumber?: string
+  onClearSupersededPhoneNumber: () => void
   onAddEmail: () => void
   onAddPhone: () => void
   onClearAddedEmail: () => void
-  onManageContacts: () => void
   onDeleteAccount: () => void
   onSetPassword: () => void
   onReload: () => void
@@ -104,18 +105,6 @@ const DeleteAccount = (props: Props) => (
   </SettingsSection>
 )
 
-const ManageContacts = (props: Props) => (
-  <SettingsSection>
-    <Kb.Box2 direction="vertical" gap="xtiny" fullWidth={true}>
-      <Kb.Text type="Header">Manage contacts</Kb.Text>
-      <Kb.Text type="BodySmall">Manage importing the contacts on this device.</Kb.Text>
-    </Kb.Box2>
-    <Kb.ButtonBar align="flex-start" style={styles.buttonBar}>
-      <Kb.Button mode="Secondary" onClick={props.onManageContacts} label="Manage contacts" small={true} />
-    </Kb.ButtonBar>
-  </SettingsSection>
-)
-
 const AccountSettings = (props: Props) => (
   <Kb.Reloadable
     onReload={props.onReload}
@@ -124,22 +113,27 @@ const AccountSettings = (props: Props) => (
   >
     <Kb.ScrollView style={Styles.globalStyles.fullWidth}>
       {props.addedEmail && (
-        <Kb.Banner
-          color="green"
-          text={`Check your inbox! A verification link was sent to ${props.addedEmail}.`}
-          onClose={props.onClearAddedEmail}
-        />
+        <Kb.Banner color="yellow" onClose={props.onClearAddedEmail}>
+          <Kb.BannerParagraph
+            bannerColor="yellow"
+            content={`Check your inbox! A verification link was sent to ${props.addedEmail}.`}
+          />
+        </Kb.Banner>
+      )}
+      {props.supersededPhoneNumber && (
+        <Kb.Banner color="yellow" onClose={props.onClearSupersededPhoneNumber}>
+          <Kb.BannerParagraph
+            bannerColor="yellow"
+            content={`Your unverified phone number ${
+              props.supersededPhoneNumber
+            } is now associated with another Keybase user.`}
+          />
+        </Kb.Banner>
       )}
       <Kb.Box2 direction="vertical" fullWidth={true} fullHeight={true}>
         <EmailPhone {...props} />
         <Kb.Divider />
         <Password {...props} />
-        {Styles.isMobile && flags.sbsContacts && (
-          <>
-            <Kb.Divider />
-            <ManageContacts {...props} />
-          </>
-        )}
         <Kb.Divider />
         <DeleteAccount {...props} />
       </Kb.Box2>

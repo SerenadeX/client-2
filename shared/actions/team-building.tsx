@@ -6,6 +6,8 @@ import * as RouteTreeGen from './route-tree-gen'
 import * as Saga from '../util/saga'
 import * as RPCTypes from '../constants/types/rpc-gen'
 import {TypedState} from '../constants/reducer'
+import flags from '../util/feature-flags'
+import {validateNumber} from '../util/phone-numbers'
 
 const closeTeamBuilding = () => RouteTreeGen.createClearModals()
 export type NSAction = {payload: {namespace: TeamBuildingTypes.AllowedNamespace}}
@@ -13,22 +15,24 @@ export type NSAction = {payload: {namespace: TeamBuildingTypes.AllowedNamespace}
 const apiSearch = (
   query: string,
   service: TeamBuildingTypes.ServiceIdWithContact,
-  limit: number,
-  includeServicesSummary: boolean
+  maxResults: number,
+  includeServicesSummary: boolean,
+  impTofuQuery: RPCTypes.ImpTofuQuery | null
 ): Promise<Array<TeamBuildingTypes.User>> =>
-  RPCTypes.apiserverGetWithSessionRpcPromise({
-    args: [
-      {key: 'q', value: query},
-      {key: 'num_wanted', value: String(limit)},
-      {key: 'service', value: service === 'keybase' ? '' : service},
-      {key: 'include_services_summary', value: includeServicesSummary ? '1' : '0'},
-    ],
-    endpoint: 'user/user_search',
+  RPCTypes.userSearchUserSearchRpcPromise({
+    impTofuQuery,
+    includeContacts: flags.sbsContacts && service === 'keybase',
+    includeServicesSummary,
+    maxResults,
+    query,
+    service,
   })
     .then(results =>
-      JSON.parse(results.body)
-        .list.map(r => Constants.parseRawResultToUser(r, service))
-        .filter(u => !!u)
+      (results || []).reduce<Array<TeamBuildingTypes.User>>((arr, r) => {
+        const u = Constants.parseRawResultToUser(r, service)
+        u && arr.push(u)
+        return arr
+      }, [])
     )
     .catch(err => {
       logger.error(`Error in searching for ${query} on ${service}. ${err.message}`)
@@ -50,9 +54,14 @@ function* searchResultCounts(state: TypedState, {payload: {namespace}}: NSAction
     .filter(s => s !== teamBuildingSelectedService && s !== 'contact')
     .filter(s => !teamBuildingState.teamBuildingSearchResults.hasIn([teamBuildingSearchQuery, s]))
 
-  const isStillInSameQuery = (state: TypedState): boolean =>
-    teamBuildingState.teamBuildingSearchQuery === teamBuildingSearchQuery &&
-    teamBuildingState.teamBuildingSelectedService === teamBuildingSelectedService
+  const isStillInSameQuery = (state: TypedState): boolean => {
+    const teamBuildingState = state[namespace].teamBuilding
+
+    return (
+      teamBuildingState.teamBuildingSearchQuery === teamBuildingSearchQuery &&
+      teamBuildingState.teamBuildingSelectedService === teamBuildingSelectedService
+    )
+  }
 
   // Defer so we aren't conflicting with the main search
   yield Saga.callUntyped(Saga.delay, 100)
@@ -79,19 +88,46 @@ function* searchResultCounts(state: TypedState, {payload: {namespace}}: NSAction
         if (!isStillInSameQuery(yield* Saga.selectState())) {
           break
         }
-        const action = yield apiSearch(teamBuildingSearchQuery, service, teamBuildingSearchLimit, true).then(
-          users =>
-            TeamBuildingGen.createSearchResultsLoaded({
-              namespace,
-              query: teamBuildingSearchQuery,
-              service,
-              users,
-            })
+        const action = yield apiSearch(
+          teamBuildingSearchQuery,
+          service,
+          teamBuildingSearchLimit,
+          true,
+          null
+        ).then(users =>
+          TeamBuildingGen.createSearchResultsLoaded({
+            namespace,
+            query: teamBuildingSearchQuery,
+            service,
+            users,
+          })
         )
         yield Saga.put(action)
       }
     })
   }
+}
+
+const makeImpTofuQuery = (query: string, region: string | null): RPCTypes.ImpTofuQuery | null => {
+  const phoneNumber = validateNumber(query, region)
+  if (phoneNumber.valid) {
+    return {
+      phone: phoneNumber.e164,
+      t: RPCTypes.ImpTofuSearchType.phone,
+    }
+  } else {
+    // Consider the query a valid email if it contains at sign and a period
+    // after the at sign.
+    const atIndex = query.indexOf('@')
+    const periodIndex = query.lastIndexOf('.')
+    if (atIndex !== -1 && periodIndex > atIndex && periodIndex !== query.length - 1) {
+      return {
+        email: query,
+        t: RPCTypes.ImpTofuSearchType.email,
+      }
+    }
+  }
+  return null
 }
 
 const search = (state: TypedState, {payload: {namespace}}: NSAction) => {
@@ -104,16 +140,18 @@ const search = (state: TypedState, {payload: {namespace}}: NSAction) => {
     return
   }
 
-  // TODO add a way to search for contacts
-  if (teamBuildingSearchQuery === '' || teamBuildingSelectedService === 'contact') {
-    return
+  const query = teamBuildingSearchQuery
+  let impTofuQuery: RPCTypes.ImpTofuQuery | null = null
+  if (flags.sbsContacts && teamBuildingSelectedService === 'keybase') {
+    const userRegion = state.settings.contacts.userCountryCode
+    impTofuQuery = makeImpTofuQuery(query, userRegion)
   }
 
-  return apiSearch(teamBuildingSearchQuery, teamBuildingSelectedService, teamBuildingSearchLimit, true).then(
+  return apiSearch(query, teamBuildingSelectedService, teamBuildingSearchLimit, true, impTofuQuery).then(
     users =>
       TeamBuildingGen.createSearchResultsLoaded({
         namespace,
-        query: teamBuildingSearchQuery,
+        query,
         service: teamBuildingSelectedService,
         users,
       })
@@ -121,17 +159,40 @@ const search = (state: TypedState, {payload: {namespace}}: NSAction) => {
 }
 
 const fetchUserRecs = (state: TypedState, {payload: {namespace}}: NSAction) =>
-  RPCTypes.userInterestingPeopleRpcPromise({maxUsers: 50})
-    .then((suggestions: Array<RPCTypes.InterestingPerson> | null) =>
-      (suggestions || []).map(
-        ({username, fullname}): TeamBuildingTypes.User => ({
-          id: username,
-          prettyName: fullname,
-          serviceMap: {keybase: username},
+  Promise.all([
+    RPCTypes.userInterestingPeopleRpcPromise({maxUsers: 50}),
+    flags.sbsContacts
+      ? RPCTypes.contactsLookupSavedContactsListRpcPromise()
+      : Promise.resolve([] as RPCTypes.ProcessedContact[]),
+  ])
+    .then(([_suggestionRes, _contactRes]) => {
+      const suggestionRes = _suggestionRes || []
+      const contactRes = _contactRes || []
+      const contactUsernames = new Set(contactRes.map(x => x.username).filter(Boolean))
+      const contacts = contactRes.map(
+        (x): TeamBuildingTypes.User => ({
+          id: x.assertion,
+          label: x.displayLabel,
+          prettyName: x.displayName,
+          serviceMap: {keybase: x.username},
         })
       )
-    )
-    .catch(e => {
+      let suggestions = suggestionRes
+        .filter(({username}) => !contactUsernames.has(username))
+        .map(
+          ({username, fullname}): TeamBuildingTypes.User => ({
+            id: username,
+            prettyName: fullname,
+            serviceMap: {keybase: username},
+          })
+        )
+      const expectingContacts = flags.sbsContacts && state.settings.contacts.importEnabled
+      if (expectingContacts) {
+        suggestions = suggestions.slice(0, 5)
+      }
+      return suggestions.concat(contacts)
+    })
+    .catch(() => {
       logger.error(`Error in fetching recs`)
       return []
     })
@@ -145,10 +206,11 @@ export function filterForNs<S, A, L, R>(
     if (a && a.payload && a.payload.namespace === namespace) {
       return fn(s, a, l)
     }
+    return undefined
   }
 }
 
-function filterGenForNs<S, A, L, R>(
+function filterGenForNs<S, A, L>(
   namespace: TeamBuildingTypes.AllowedNamespace,
   fn: (s: S, a: A & NSAction, l: L) => Iterable<any>
 ) {

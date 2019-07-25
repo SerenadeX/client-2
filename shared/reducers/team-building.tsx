@@ -3,7 +3,6 @@ import * as I from 'immutable'
 import * as Constants from '../constants/team-building'
 import * as Types from '../constants/types/team-building'
 import * as TeamBuildingGen from '../actions/team-building-gen'
-import {TypedActions} from '../actions/typed-actions-gen'
 import {trim} from 'lodash-es'
 
 export default function(
@@ -11,12 +10,15 @@ export default function(
   state: Types.TeamBuildingSubState,
   action: TeamBuildingGen.Actions
 ): Types.TeamBuildingSubState {
+  if (action.type === TeamBuildingGen.resetStore) {
+    return Constants.makeSubState()
+  }
+
   if (action.payload.namespace !== namespace) {
     return state
   }
 
   switch (action.type) {
-    case TeamBuildingGen.resetStore:
     case TeamBuildingGen.cancelTeamBuilding:
       return Constants.makeSubState()
     case TeamBuildingGen.selectRole:

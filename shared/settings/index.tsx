@@ -4,20 +4,20 @@ import * as SettingsGen from '../actions/settings-gen'
 import * as Constants from '../constants/settings'
 import * as Types from '../constants/types/settings'
 import * as RouteTreeGen from '../actions/route-tree-gen'
-import SettingsContainer, {Props} from './render'
+import SettingsContainer from './render'
 import {compose} from 'recompose'
 import * as Container from '../util/container'
 import {requestIdleCallback} from '../util/idle-callback'
 import {RouteProps} from '../route-tree/render-route'
-import * as I from 'immutable'
 
 type OwnProps = {
   routeSelected: Types.Tab
   children: React.ReactNode
-} & RouteProps<{}, {}>
+} & RouteProps
 
 const mapStateToProps = (state: Container.TypedState) => ({
   _badgeNumbers: state.notifications.navBadges,
+  _contactImportEnabled: state.settings.contacts.importEnabled,
   _walletsAcceptedDisclaimer: state.wallets.acceptedDisclaimer,
   badgeNotifications: !state.push.hasPermissions,
   hasRandomPW: state.settings.password.randomPW,
@@ -25,7 +25,7 @@ const mapStateToProps = (state: Container.TypedState) => ({
   logoutHandshakeWaiters: state.config.logoutHandshakeWaiters,
 })
 
-const mapDispatchToProps = (dispatch: Container.TypedDispatch) => ({
+const mapDispatchToProps = (dispatch: Container.TypedDispatch, ownProps: OwnProps) => ({
   _loadHasRandomPW: () => dispatch(SettingsGen.createLoadHasRandomPw()),
   onLogout: () => dispatch(ConfigGen.createLogout()),
   onTabChange: (tab: Types.Tab, walletsAcceptedDisclaimer: boolean) => {
@@ -33,7 +33,10 @@ const mapDispatchToProps = (dispatch: Container.TypedDispatch) => ({
       dispatch(RouteTreeGen.createNavigateAppend({path: ['walletOnboarding']}))
       return
     }
-    dispatch(RouteTreeGen.createSwitchTo({path: [tab]}))
+    if (ownProps.routeSelected === Constants.accountTab && tab !== Constants.accountTab) {
+      dispatch(SettingsGen.createClearAddedEmail())
+    }
+    dispatch(RouteTreeGen.createNavigateAppend({path: [tab]}))
   },
 })
 
@@ -42,6 +45,7 @@ const mergeProps = (stateProps: ReturnType<typeof mapStateToProps>, dispatchProp
   badgeNotifications: stateProps.badgeNotifications,
   badgeNumbers: stateProps._badgeNumbers.toObject(),
   children: ownProps.children,
+  contactsLabel: stateProps._contactImportEnabled ? 'Phone contacts' : 'Import phone contacts',
   hasRandomPW: stateProps.hasRandomPW,
   isModal: stateProps.isModal,
   logoutInProgress: stateProps.logoutHandshakeWaiters.size > 0,
@@ -59,7 +63,7 @@ const Connected = compose(
       requestIdleCallback(loadHasRandomPW)
     },
   })
-)(SettingsContainer)
+)(SettingsContainer as any)
 
 // @ts-ignore TODO fix
 Connected.navigationOptions = {

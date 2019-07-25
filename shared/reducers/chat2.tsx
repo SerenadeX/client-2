@@ -14,23 +14,33 @@ import {partition} from 'lodash-es'
 import {actionHasError} from '../util/container'
 import {ifTSCComplainsAboutThisFunctionYouHaventHandledAllCasesInASwitch} from '../util/switch'
 
-type EngineActions = EngineGen.Chat1NotifyChatChatTypingUpdatePayload
+type EngineActions =
+  | EngineGen.Chat1NotifyChatChatTypingUpdatePayload
+  | EngineGen.Chat1ChatUiChatBotCommandsUpdateStatusPayload
 
 const initialState: Types.State = Constants.makeState()
 
 // Backend gives us messageIDs sometimes so we need to find our ordinal
-const messageIDToOrdinal = (messageMap, pendingOutboxToOrdinal, conversationIDKey, messageID) => {
+const messageIDToOrdinal = (
+  messageMap: Types.State['messageMap'],
+  pendingOutboxToOrdinal: Types.State['pendingOutboxToOrdinal'],
+  conversationIDKey: Types.ConversationIDKey,
+  messageID: Types.MessageID
+): Types.Ordinal | null => {
   // A message we didn't send in this session?
   let m = messageMap.getIn([conversationIDKey, Types.numberToOrdinal(messageID)])
   if (m && m.id && m.id === messageID) {
     return m.ordinal
   }
   // Search through our sent messages
-  const pendingOrdinal = pendingOutboxToOrdinal.get(conversationIDKey, I.Map()).find(o => {
+  const pendingOrdinal = (
+    pendingOutboxToOrdinal.get(conversationIDKey) || I.Map<Types.OutboxID, Types.Ordinal>()
+  ).find(o => {
     m = messageMap.getIn([conversationIDKey, o])
     if (m && m.id && m.id === messageID) {
       return true
     }
+    return false
   })
 
   if (pendingOrdinal) {
@@ -40,7 +50,10 @@ const messageIDToOrdinal = (messageMap, pendingOutboxToOrdinal, conversationIDKe
   return null
 }
 
-const metaMapReducer = (metaMap, action) => {
+const metaMapReducer = (
+  metaMap: Types.State['metaMap'],
+  action: Chat2Gen.Actions
+): Types.State['metaMap'] => {
   switch (action.type) {
     case Chat2Gen.setConversationOffline:
       return metaMap.update(action.payload.conversationIDKey, meta =>
@@ -66,11 +79,14 @@ const metaMapReducer = (metaMap, action) => {
           case RPCChatTypes.ConversationErrorType.otherrekeyneeded: // fallthrough
           case RPCChatTypes.ConversationErrorType.selfrekeyneeded: {
             const {username, conversationIDKey} = action.payload
-            const participants = error.rekeyInfo
-              ? I.Set(
-                  [].concat(error.rekeyInfo.writerNames, error.rekeyInfo.readerNames).filter(Boolean)
+            const rekeyInfo = error.rekeyInfo
+            const participants = rekeyInfo
+              ? I.Set<string>(
+                  ([] as Array<string>)
+                    .concat(rekeyInfo.writerNames || [], rekeyInfo.readerNames || [])
+                    .filter(Boolean)
                 ).toList()
-              : I.OrderedSet(error.unverifiedTLFName.split(',')).toList()
+              : I.OrderedSet<string>(error.unverifiedTLFName.split(',')).toList()
 
             const rekeyers = I.Set<string>(
               error.typ === RPCChatTypes.ConversationErrorType.selfrekeyneeded
@@ -87,8 +103,8 @@ const metaMapReducer = (metaMap, action) => {
               rekeyers,
               snippet: error.message,
               snippetDecoration: '',
-              trustedState: 'error',
-            } as const)
+              trustedState: 'error' as const,
+            })
             return metaMap.set(conversationIDKey, newMeta)
           }
           default:
@@ -164,7 +180,11 @@ const metaMapReducer = (metaMap, action) => {
   }
 }
 
-const messageMapReducer = (messageMap, action, pendingOutboxToOrdinal) => {
+const messageMapReducer = (
+  messageMap: Types.State['messageMap'],
+  action: Chat2Gen.Actions,
+  pendingOutboxToOrdinal: Types.State['pendingOutboxToOrdinal']
+): Types.State['messageMap'] => {
   switch (action.type) {
     case Chat2Gen.markConversationsStale:
       return action.payload.updateType === RPCChatTypes.StaleUpdateType.clear
@@ -287,7 +307,7 @@ const messageMapReducer = (messageMap, action, pendingOutboxToOrdinal) => {
           if (!message || message.type !== 'attachment') {
             return message
           }
-          const path = action.payload.path || ''
+          const path = (!actionHasError(action) && action.payload.path) || ''
           return message
             .set('downloadPath', path)
             .set('transferProgress', 0)
@@ -305,7 +325,9 @@ const messageMapReducer = (messageMap, action, pendingOutboxToOrdinal) => {
       }
       return messageMap
     case Chat2Gen.updateMessages: {
-      const updateOrdinals = action.payload.messages.reduce((l, msg) => {
+      const updateOrdinals = action.payload.messages.reduce<
+        Array<{msg: Types.Message; ordinal: Types.Ordinal}>
+      >((l, msg) => {
         const ordinal = messageIDToOrdinal(
           messageMap,
           pendingOutboxToOrdinal,
@@ -315,18 +337,23 @@ const messageMapReducer = (messageMap, action, pendingOutboxToOrdinal) => {
         if (!ordinal) {
           return l
         }
-        return l.concat({msg: msg.message.set('ordinal', ordinal), ordinal})
+        // @ts-ignore TODO Fix not sure whats up
+        const m: Types.Message = msg.message.set('ordinal', ordinal)
+        return l.concat({msg: m, ordinal})
       }, [])
-      return messageMap.updateIn([action.payload.conversationIDKey], messages => {
-        if (!messages) {
-          return messages
-        }
-        return messages.withMutations(msgs => {
-          updateOrdinals.forEach(r => {
-            msgs.set(r.ordinal, r.msg)
+      return messageMap.updateIn(
+        [action.payload.conversationIDKey],
+        (messages: I.Map<number, Types.Message>) => {
+          if (!messages) {
+            return messages
+          }
+          return messages.withMutations(msgs => {
+            updateOrdinals.forEach(r => {
+              msgs.set(r.ordinal, r.msg)
+            })
           })
-        })
-      })
+        }
+      )
     }
     case Chat2Gen.messagesExploded: {
       const {conversationIDKey, messageIDs} = action.payload
@@ -360,7 +387,10 @@ const messageMapReducer = (messageMap, action, pendingOutboxToOrdinal) => {
   }
 }
 
-const messageOrdinalsReducer = (messageOrdinals, action) => {
+const messageOrdinalsReducer = (
+  messageOrdinals: Types.State['messageOrdinals'],
+  action: Chat2Gen.Actions
+): Types.State['messageOrdinals'] => {
   switch (action.type) {
     case Chat2Gen.markConversationsStale:
       return action.payload.updateType === RPCChatTypes.StaleUpdateType.clear
@@ -410,12 +440,12 @@ const rootReducer = (
             // non-visible (edit, delete, reaction...) message so we scan the
             // ordinals for the appropriate value.
             const messageMap = state.messageMap.get(conversationIDKey, I.Map<Types.Ordinal, Types.Message>())
-            const ordinals = state.messageOrdinals.get(conversationIDKey, I.OrderedSet())
+            const ordinals = state.messageOrdinals.get(conversationIDKey) || I.OrderedSet<Types.Ordinal>()
             const ord = ordinals.find(o => {
               const message = messageMap.get(o)
-              return message && message.id >= readMsgID + 1
+              return !!(message && message.id >= readMsgID + 1)
             })
-            const message = messageMap.get(ord)
+            const message = ord && messageMap.get(ord)
             if (message && message.id) {
               s.setIn(['orangeLineMap', conversationIDKey], message.id)
             } else {
@@ -430,6 +460,15 @@ const rootReducer = (
         s.deleteIn(['messageCenterOrdinals', conversationIDKey])
         s.setIn(['containsLatestMessageMap', conversationIDKey], true)
         s.set('selectedConversation', conversationIDKey)
+        if (Constants.isValidConversationIDKey(conversationIDKey)) {
+          // If navigating away from error conversation to a valid conv - clear
+          // error msg.
+          s.set('createConversationError', null)
+        }
+      })
+    case Chat2Gen.conversationErrored:
+      return state.withMutations(s => {
+        s.set('createConversationError', action.payload.message)
       })
     case Chat2Gen.updateUnreadline:
       if (action.payload.messageID > 0) {
@@ -530,10 +569,10 @@ const rootReducer = (
         }
 
         // Editing your last message
-        const ordinals = state.messageOrdinals.get(conversationIDKey, I.OrderedSet())
+        const ordinals = state.messageOrdinals.get(conversationIDKey) || I.OrderedSet<Types.Ordinal>()
         const found = ordinals.findLast(o => {
           const message = messageMap.get(o)
-          return (
+          return !!(
             message &&
             message.type === 'text' &&
             message.author === editLastUser &&
@@ -649,8 +688,8 @@ const rootReducer = (
           Object.keys(convoToMessages).forEach(cid => {
             const conversationIDKey = Types.stringToConversationIDKey(cid)
             const messages = convoToMessages[cid]
-            const removedOrdinals = []
-            const ordinals = messages.reduce((arr, message) => {
+            const removedOrdinals: Array<Types.Ordinal> = []
+            const ordinals = messages.reduce<Array<Types.Ordinal>>((arr, message) => {
               const m = canSendType(message)
               if (m) {
                 // Sendable so we might have an existing message
@@ -660,7 +699,10 @@ const rootReducer = (
                 // We might have a placeholder for this message in there with ordinal of its own ID, let's
                 // get rid of it if that is the case
                 if (m.id) {
-                  const oldMsg = oldMessageMap.getIn([conversationIDKey, Types.numberToOrdinal(m.id)])
+                  const oldMsg: Types.Message = oldMessageMap.getIn([
+                    conversationIDKey,
+                    Types.numberToOrdinal(m.id),
+                  ])
                   if (oldMsg && oldMsg.type === 'placeholder' && oldMsg.ordinal !== m.ordinal) {
                     removedOrdinals.push(oldMsg.ordinal)
                   }
@@ -835,10 +877,15 @@ const rootReducer = (
         })
       )
     }
+    case EngineGen.chat1ChatUiChatBotCommandsUpdateStatus:
+      return state.setIn(
+        ['botCommandsUpdateStatusMap', Types.stringToConversationIDKey(action.payload.params.convID)],
+        action.payload.params.status
+      )
     case EngineGen.chat1NotifyChatChatTypingUpdate: {
       const {typingUpdates} = action.payload.params
-      const typingMap = I.Map<string, I.Set<string>>(
-        (typingUpdates || []).reduce((arr, u) => {
+      const typingMap = I.Map(
+        (typingUpdates || []).reduce<Array<[string, I.Set<string>]>>((arr, u) => {
           arr.push([Types.conversationIDToKey(u.convID), I.Set((u.typers || []).map(t => t.username))])
           return arr
         }, [])
@@ -922,7 +969,7 @@ const rootReducer = (
         upToMessageID = null,
       } = action.payload
 
-      let upToOrdinals = []
+      let upToOrdinals: Array<Types.Ordinal> = []
       if (upToMessageID) {
         const ordinalToMessage = state.messageMap.get(
           conversationIDKey,
@@ -943,7 +990,12 @@ const rootReducer = (
             messageIDToOrdinal(state.messageMap, state.pendingOutboxToOrdinal, conversationIDKey, messageID)
           ),
           ...upToOrdinals,
-        ].filter(Boolean)
+        ].reduce<Array<Types.Ordinal>>((arr, n) => {
+          if (n) {
+            arr.push(n)
+          }
+          return arr
+        }, [])
       )
 
       return state.withMutations(s => {
@@ -1009,10 +1061,24 @@ const rootReducer = (
       return state.update('unsentTextMap', old =>
         old.setIn([action.payload.conversationIDKey], action.payload.text)
       )
-    case Chat2Gen.toggleReplyToMessage:
-      return action.payload.ordinal
-        ? state.setIn(['replyToMap', action.payload.conversationIDKey], action.payload.ordinal)
-        : state.deleteIn(['replyToMap', action.payload.conversationIDKey])
+    case Chat2Gen.setPrependText:
+      return state.update('prependTextMap', old =>
+        old.setIn([action.payload.conversationIDKey], action.payload.text)
+      )
+    case Chat2Gen.toggleReplyToMessage: {
+      const {conversationIDKey, ordinal} = action.payload
+      if (ordinal) {
+        let nextState = state.setIn(['replyToMap', conversationIDKey], ordinal)
+        nextState = nextState.setIn(
+          ['prependTextMap', conversationIDKey],
+          // we always put something in prepend to trigger the focus regain on the input bar
+          new HiddenString('')
+        )
+        return nextState
+      } else {
+        return state.deleteIn(['replyToMap', conversationIDKey])
+      }
+    }
     case Chat2Gen.replyJump:
       return state.deleteIn(['messageCenterOrdinals', action.payload.conversationIDKey])
     case Chat2Gen.threadSearchResults:
@@ -1272,7 +1338,7 @@ const rootReducer = (
       ) {
         nextState = nextState.set('attachmentFullscreenSelection', {
           autoPlay: state.attachmentFullscreenSelection.autoPlay,
-          message: message.set('downloadPath', action.payload.path),
+          message: message.set('downloadPath', action.payload.path || null),
         })
       }
       nextState = nextState.updateIn(

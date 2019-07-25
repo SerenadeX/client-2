@@ -24,6 +24,7 @@ export const editContactImportEnabled = 'settings:editContactImportEnabled'
 export const editEmail = 'settings:editEmail'
 export const editPhone = 'settings:editPhone'
 export const feedbackSent = 'settings:feedbackSent'
+export const importContactsLater = 'settings:importContactsLater'
 export const invitesClearError = 'settings:invitesClearError'
 export const invitesReclaim = 'settings:invitesReclaim'
 export const invitesReclaimed = 'settings:invitesReclaimed'
@@ -45,6 +46,7 @@ export const loadedLockdownMode = 'settings:loadedLockdownMode'
 export const loadedProxyData = 'settings:loadedProxyData'
 export const loadedRememberPassword = 'settings:loadedRememberPassword'
 export const loadedSettings = 'settings:loadedSettings'
+export const loadedUserCountryCode = 'settings:loadedUserCountryCode'
 export const notificationsRefresh = 'settings:notificationsRefresh'
 export const notificationsRefreshed = 'settings:notificationsRefreshed'
 export const notificationsSaved = 'settings:notificationsSaved'
@@ -64,11 +66,14 @@ export const onUpdatePasswordError = 'settings:onUpdatePasswordError'
 export const onUpdatedPGPSettings = 'settings:onUpdatedPGPSettings'
 export const processorProfile = 'settings:processorProfile'
 export const requestContactPermissions = 'settings:requestContactPermissions'
+export const resendVerificationForPhoneNumber = 'settings:resendVerificationForPhoneNumber'
 export const saveProxyData = 'settings:saveProxyData'
 export const sendFeedback = 'settings:sendFeedback'
 export const sentVerificationEmail = 'settings:sentVerificationEmail'
 export const setAllowDeleteAccount = 'settings:setAllowDeleteAccount'
+export const setContactImportedCount = 'settings:setContactImportedCount'
 export const stop = 'settings:stop'
+export const toggleRuntimeStats = 'settings:toggleRuntimeStats'
 export const trace = 'settings:trace'
 export const unfurlSettingsError = 'settings:unfurlSettingsError'
 export const unfurlSettingsRefresh = 'settings:unfurlSettingsRefresh'
@@ -80,11 +85,7 @@ export const waitingForResponse = 'settings:waitingForResponse'
 
 // Payload Types
 type _AddEmailPayload = {readonly email: string; readonly searchable: boolean}
-type _AddPhoneNumberPayload = {
-  readonly allowSearch: boolean
-  readonly phoneNumber: string
-  readonly resend?: boolean
-}
+type _AddPhoneNumberPayload = {readonly allowSearch: boolean; readonly phoneNumber: string}
 type _AddedEmailPayload = {readonly email: string; readonly error?: Error}
 type _AddedPhoneNumberPayload = {
   readonly allowSearch: boolean
@@ -114,6 +115,7 @@ type _EditPhonePayload = {
   readonly verify?: boolean
 }
 type _FeedbackSentPayload = {readonly error: Error | null}
+type _ImportContactsLaterPayload = void
 type _InvitesClearErrorPayload = void
 type _InvitesReclaimPayload = {readonly inviteId: string}
 type _InvitesReclaimedPayload = void
@@ -140,6 +142,7 @@ type _LoadedSettingsPayload = {
   readonly emails: I.Map<string, Types.EmailRow> | null
   readonly phones: I.Map<string, Types.PhoneRow> | null
 }
+type _LoadedUserCountryCodePayload = {readonly code: string | null}
 type _NotificationsRefreshPayload = void
 type _NotificationsRefreshedPayload = {readonly notifications: I.Map<string, Types.NotificationsGroupState>}
 type _NotificationsSavedPayload = void
@@ -159,6 +162,7 @@ type _OnUpdatePasswordErrorPayload = {readonly error: Error}
 type _OnUpdatedPGPSettingsPayload = {readonly hasKeys: boolean}
 type _ProcessorProfilePayload = {readonly durationSeconds: number}
 type _RequestContactPermissionsPayload = {readonly thenToggleImportOn?: boolean}
+type _ResendVerificationForPhoneNumberPayload = {readonly phoneNumber: string}
 type _SaveProxyDataPayload = {readonly proxyData: RPCTypes.ProxyData}
 type _SendFeedbackPayload = {
   readonly feedback: string
@@ -167,7 +171,9 @@ type _SendFeedbackPayload = {
 }
 type _SentVerificationEmailPayload = {readonly email: string}
 type _SetAllowDeleteAccountPayload = {readonly allow: boolean}
+type _SetContactImportedCountPayload = {readonly count: number | null}
 type _StopPayload = {readonly exitCode: RPCTypes.ExitCode}
+type _ToggleRuntimeStatsPayload = void
 type _TracePayload = {readonly durationSeconds: number}
 type _UnfurlSettingsErrorPayload = {readonly error: string}
 type _UnfurlSettingsRefreshPayload = void
@@ -185,7 +191,7 @@ type _WaitingForResponsePayload = {readonly waiting: boolean}
 
 // Action Creators
 /**
- * Add a phone number and kick off a text message with a verification code. If `resend` is passed, ignores the other params and uses stashed params from store.
+ * Add a phone number and kick off a text message with a verification code.
  */
 export const createAddPhoneNumber = (payload: _AddPhoneNumberPayload): AddPhoneNumberPayload => ({
   payload,
@@ -234,6 +240,12 @@ export const createUnfurlSettingsRefresh = (
 export const createUnfurlSettingsRefreshed = (
   payload: _UnfurlSettingsRefreshedPayload
 ): UnfurlSettingsRefreshedPayload => ({payload, type: unfurlSettingsRefreshed})
+/**
+ * Resend verification code for a phone number that's already added.
+ */
+export const createResendVerificationForPhoneNumber = (
+  payload: _ResendVerificationForPhoneNumberPayload
+): ResendVerificationForPhoneNumberPayload => ({payload, type: resendVerificationForPhoneNumber})
 /**
  * Reset state used for adding an email.
  */
@@ -295,6 +307,9 @@ export const createEditContactImportEnabled = (
 ): EditContactImportEnabledPayload => ({payload, type: editContactImportEnabled})
 export const createEditEmail = (payload: _EditEmailPayload): EditEmailPayload => ({payload, type: editEmail})
 export const createEditPhone = (payload: _EditPhonePayload): EditPhonePayload => ({payload, type: editPhone})
+export const createImportContactsLater = (
+  payload: _ImportContactsLaterPayload
+): ImportContactsLaterPayload => ({payload, type: importContactsLater})
 export const createInvitesClearError = (payload: _InvitesClearErrorPayload): InvitesClearErrorPayload => ({
   payload,
   type: invitesClearError,
@@ -378,6 +393,9 @@ export const createLoadedSettings = (payload: _LoadedSettingsPayload): LoadedSet
   payload,
   type: loadedSettings,
 })
+export const createLoadedUserCountryCode = (
+  payload: _LoadedUserCountryCodePayload
+): LoadedUserCountryCodePayload => ({payload, type: loadedUserCountryCode})
 export const createNotificationsRefresh = (
   payload: _NotificationsRefreshPayload
 ): NotificationsRefreshPayload => ({payload, type: notificationsRefresh})
@@ -454,7 +472,14 @@ export const createSentVerificationEmail = (
 export const createSetAllowDeleteAccount = (
   payload: _SetAllowDeleteAccountPayload
 ): SetAllowDeleteAccountPayload => ({payload, type: setAllowDeleteAccount})
+export const createSetContactImportedCount = (
+  payload: _SetContactImportedCountPayload
+): SetContactImportedCountPayload => ({payload, type: setContactImportedCount})
 export const createStop = (payload: _StopPayload): StopPayload => ({payload, type: stop})
+export const createToggleRuntimeStats = (payload: _ToggleRuntimeStatsPayload): ToggleRuntimeStatsPayload => ({
+  payload,
+  type: toggleRuntimeStats,
+})
 export const createTrace = (payload: _TracePayload): TracePayload => ({payload, type: trace})
 export const createWaitingForResponse = (payload: _WaitingForResponsePayload): WaitingForResponsePayload => ({
   payload,
@@ -508,6 +533,10 @@ export type EditContactImportEnabledPayload = {
 export type EditEmailPayload = {readonly payload: _EditEmailPayload; readonly type: typeof editEmail}
 export type EditPhonePayload = {readonly payload: _EditPhonePayload; readonly type: typeof editPhone}
 export type FeedbackSentPayload = {readonly payload: _FeedbackSentPayload; readonly type: typeof feedbackSent}
+export type ImportContactsLaterPayload = {
+  readonly payload: _ImportContactsLaterPayload
+  readonly type: typeof importContactsLater
+}
 export type InvitesClearErrorPayload = {
   readonly payload: _InvitesClearErrorPayload
   readonly type: typeof invitesClearError
@@ -593,6 +622,10 @@ export type LoadedSettingsPayload = {
   readonly payload: _LoadedSettingsPayload
   readonly type: typeof loadedSettings
 }
+export type LoadedUserCountryCodePayload = {
+  readonly payload: _LoadedUserCountryCodePayload
+  readonly type: typeof loadedUserCountryCode
+}
 export type NotificationsRefreshPayload = {
   readonly payload: _NotificationsRefreshPayload
   readonly type: typeof notificationsRefresh
@@ -669,6 +702,10 @@ export type RequestContactPermissionsPayload = {
   readonly payload: _RequestContactPermissionsPayload
   readonly type: typeof requestContactPermissions
 }
+export type ResendVerificationForPhoneNumberPayload = {
+  readonly payload: _ResendVerificationForPhoneNumberPayload
+  readonly type: typeof resendVerificationForPhoneNumber
+}
 export type SaveProxyDataPayload = {
   readonly payload: _SaveProxyDataPayload
   readonly type: typeof saveProxyData
@@ -682,7 +719,15 @@ export type SetAllowDeleteAccountPayload = {
   readonly payload: _SetAllowDeleteAccountPayload
   readonly type: typeof setAllowDeleteAccount
 }
+export type SetContactImportedCountPayload = {
+  readonly payload: _SetContactImportedCountPayload
+  readonly type: typeof setContactImportedCount
+}
 export type StopPayload = {readonly payload: _StopPayload; readonly type: typeof stop}
+export type ToggleRuntimeStatsPayload = {
+  readonly payload: _ToggleRuntimeStatsPayload
+  readonly type: typeof toggleRuntimeStats
+}
 export type TracePayload = {readonly payload: _TracePayload; readonly type: typeof trace}
 export type UnfurlSettingsErrorPayload = {
   readonly payload: _UnfurlSettingsErrorPayload
@@ -732,6 +777,7 @@ export type Actions =
   | EditEmailPayload
   | EditPhonePayload
   | FeedbackSentPayload
+  | ImportContactsLaterPayload
   | InvitesClearErrorPayload
   | InvitesReclaimPayload
   | InvitesReclaimedPayload
@@ -755,6 +801,7 @@ export type Actions =
   | LoadedProxyDataPayload
   | LoadedRememberPasswordPayload
   | LoadedSettingsPayload
+  | LoadedUserCountryCodePayload
   | NotificationsRefreshPayload
   | NotificationsRefreshedPayload
   | NotificationsSavedPayload
@@ -774,11 +821,14 @@ export type Actions =
   | OnUpdatedPGPSettingsPayload
   | ProcessorProfilePayload
   | RequestContactPermissionsPayload
+  | ResendVerificationForPhoneNumberPayload
   | SaveProxyDataPayload
   | SendFeedbackPayload
   | SentVerificationEmailPayload
   | SetAllowDeleteAccountPayload
+  | SetContactImportedCountPayload
   | StopPayload
+  | ToggleRuntimeStatsPayload
   | TracePayload
   | UnfurlSettingsErrorPayload
   | UnfurlSettingsRefreshPayload
@@ -787,4 +837,4 @@ export type Actions =
   | VerifiedPhoneNumberPayload
   | VerifyPhoneNumberPayload
   | WaitingForResponsePayload
-  | {type: 'common:resetStore', payload: null}
+  | {type: 'common:resetStore', payload: {}}
